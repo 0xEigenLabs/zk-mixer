@@ -4,7 +4,7 @@ node_modules
 cache
 artifacts
 typechain
-circuit/range_proof_js
+circuit/mixer_js
 
 node_modules
 .env
