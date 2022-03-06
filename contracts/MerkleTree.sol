@@ -93,7 +93,6 @@ contract MerkleTree {
         return MT.leaves2[tree_depth][0];
     }
 
-
     function getLeaf(uint256 j,uint256 k) public view returns (uint256 root) {
         root = MT.leaves2[j][k];
     }
