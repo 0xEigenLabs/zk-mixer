@@ -1,0 +1,43 @@
+{
+  "name": "ZKMixer",
+  "version": "0.0.1",
+  "description": "Eigen ZK Mixer",
+  "main": "index.js",
+  "scripts": {
+    "lint": "./node_modules/.bin/eslint src --ext .ts",
+    "clean": "rm -rf build dist typechain cache artifacts",
+    "build": "hardhat compile",
+    "test": "yarn build && npx hardhat test"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@mattrglobal/node-bbs-signatures": "^0.13.0",
+    "@openzeppelin/contracts": "^4.5.0",
+    "bignumber.js": "^9.0.2",
+    "circomlibjs": "^0.1.1",
+    "sequelize": "^6.15.0",
+    "circom_tester": "0.0.5",
+    "snarkjs": "^0.4.6"
+  },
+  "devDependencies": {
+    "@eslint/create-config": "^0.1.2",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@typechain/ethers-v5": "^7.0.1",
+    "@typechain/hardhat": "^4.0.0",
+    "@types/mocha": "^9.1.0",
+    "@typescript-eslint/eslint-plugin": "^5.12.0",
+    "@typescript-eslint/parser": "^5.12.0",
+    "chai": "^4.2.0",
+    "dotenv": "^16.0.0",
+    "eslint": "^8.9.0",
+    "ethereum-waffle": "^3.0.0",
+    "ethers": "^5.0.0",
+    "hardhat": "^2.5.0",
+    "ts-node": "^10.4.0",
+    "typechain": "^5.0.0",
+    "typescript": "^4.5.5",
+    "typescript-eslint-parser": "^22.0.0"
+  }
+}
