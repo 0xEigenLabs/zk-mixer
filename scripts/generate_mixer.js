@@ -30,17 +30,17 @@ async function main() {
 
   let cmt = mimcjs.hash(nullifierHash, secret)
 
-  function generate_salt(num, length = 512) {
-    let ret = []
-    for (var i = 0; i < num; i ++) {
-      const buf = randomBytes(length/8).toString('hex');
-      ret.push(new BigNumber(buf, 16).toString(10))
-    }
-    return ret
-  }
-
   // generates salt to encrypt each leaf
-  let nums = generate_salt(8, 154)
+  let merklePath = [
+    '0',
+    '11730251359286723731141466095709901450170369094578288842486979042586033922425',
+    '9246143820134657901174176070515121907817622693387763521229610032056676659170',
+    '3919701857960328675810908960351443394156342162925591865624975500788003961839',
+    '11868459870544964516983456008242250460119356993157504951373700810334626455267',
+    '17452340833314273101389791943519612073692685328163719737408744891984034913325',
+    '5253775198292439148470029927208469781432760606734473405438165226265735347735',
+    '14858461545237595239767639763214142711575238949421318668721596715479466649076'
+  ]
 
   // get merkle root
   let root = mimcjs.hash(cmt, 0);
@@ -49,9 +49,9 @@ async function main() {
   for (var i = 0; i < Number(LEAF_NUM); i++) {
     //console.log(root)
     if (path2_root_pos[i] === 1) {
-      root = mimcjs.hash(root, nums[i])
+      root = mimcjs.hash(root, merklePath[i])
     } else {
-      root = mimcjs.hash(nums[i], root)
+      root = mimcjs.hash(merklePath[i], root)
     }
   }
 
@@ -59,7 +59,7 @@ async function main() {
     "root": mimcjs.F.toString(root),
     "nullifierHash": mimcjs.F.toString(nullifierHash),
     "secret": secret,
-    "paths2_root": nums,
+    "paths2_root": merklePath,
     "paths2_root_pos": path2_root_pos
   }
 

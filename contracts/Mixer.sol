@@ -6,7 +6,6 @@ import "./verifier.sol";
 import "hardhat/console.sol";
 
 contract Mixer is MerkleTree ,Verifier {
-    //mapping(uint256 => bool) public roots;
     mapping(uint256 => bool) public nullifierHashes;
     mapping(uint256 => bool) public commitments;
 
@@ -27,6 +26,8 @@ contract Mixer is MerkleTree ,Verifier {
         require(!commitments[_commitment], "The commitment has been submitted");
         // Make sure the user paid the good denomination to append a commitment in the tree
         // (Need to pay AMOUNT ether to participate in the mixing)
+        console.log("commitment");
+        console.log(_commitment);
         require(msg.value == AMOUNT);
         uint256 insertedIndex = insert(_commitment);
         commitments[_commitment] = true;
@@ -54,9 +55,9 @@ contract Mixer is MerkleTree ,Verifier {
     }
 
     // The forward function enables a user who has been the recipient
-    // of a "private payment" in the past 
+    // of a "private payment" in the past
     // (thus possessing the secret associated with a non-spent nullifier, and a commitment in the tree)
-    // to use it to pay someone else 
+    // to use it to pay someone else
     // (ie: "spend" his nullifier and creating a new commitment in the tree to pay someone else)
     function forward (
             uint[2] memory a,

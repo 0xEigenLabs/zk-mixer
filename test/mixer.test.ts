@@ -4,9 +4,9 @@ import { assert, expect } from "chai";
 const BN = require("bn.js");
 const fs = require("fs");
 const path = require("path");
-//const wasm_tester = require("circom_tester").wasm;
 const F1Field = require("ffjavascript").F1Field;
 const snarkjs = require("snarkjs");
+import * as MIMCMerkle from "../lib/MiMCMerkle";
 const {
   randomBytes
 } = require('crypto');
@@ -21,15 +21,6 @@ interface Proof {
     a: [BigNumberish, BigNumberish];
     b: [[BigNumberish, BigNumberish], [BigNumberish, BigNumberish]];
     c: [BigNumberish, BigNumberish];
-}
-
-function generate_salt(num, length = 512) {
-  let ret = []
-  for (var i = 0; i < num; i ++) {
-    const buf = randomBytes(length/8).toString('hex');
-    ret.push(new BN(buf, 16).toString(10))
-  }
-  return ret
 }
 
 function Bits2Num(n, in1) {
@@ -67,19 +58,30 @@ async function deposit(mixerInstance, signer, cmt){
 
 // getMerkleProof
 async function getMerkleProof(mixerInstance, leaf_index) {
-  let proof = await mixerInstance.getMerkleProof.call(leaf_index);
-  console.info("proof", proof);
+  let res = []
+  let addressBits = []
+  let tx = await mixerInstance.getMerkleProof(leaf_index);
+  let receipt = await tx.wait()
 
-  for (let i=0 ;i< proof[0].length;i++){
-    let t =  new BN(proof[0][i]);
+  let abi = [ "event MerkleProof(uint256[8] , uint256[8] )" ]
+  var iface = new ethers.utils.Interface(abi);
+  let logs = iface.parseLog(receipt.events[0]); 
+  let proof = logs.args[0]
+  let proof2 = logs.args[1]
+
+  for (let i=0 ;i< proof.length;i++){
+    let t =  proof[i];
     console.info("0", t.toString())
+    res.push(t.toString())
   }
 
-  for (let i=0 ;i< proof[1].length;i++){
-    let t =  new BN(proof[1][i]);
+  for (let i=0 ;i< proof2.length;i++){
+    let t =  proof2[i];
     console.info("1", t.toString())
+    addressBits.push(t.toString())
   }
-  console.log("getMerkleProof done")
+  console.log("getMerkleProof done", res, addressBits)
+  return [res, addressBits];
 }
 
 async function getRoot(mixerInstance) {
@@ -106,6 +108,8 @@ describe("Mixer test suite", () => {
         console.log(mimcContract.address)
         let F = await ethers.getContractFactory("Mixer");
         contract = await F.deploy(mimcContract.address);
+
+        await MIMCMerkle.init();
     })
 
     it ("Test MIMC", async() => {
@@ -117,33 +121,29 @@ describe("Mixer test suite", () => {
     it("Test Mixer Withdraw", async() => {
         // secret
         const path2RootPos = [1, 1, 1, 1, 1, 0, 1, 1]
-        const secret = "10111"
+        const secret = "0"
         const cmtIdx = Bits2Num(8, path2RootPos)
+        console.log("cmtIdx", cmtIdx);
         const nullifierHash = mimcJS.hash(cmtIdx, secret)
         let cmt = mimcJS.hash(mimcJS.F.toString(nullifierHash), secret)
 
+        let leaf = mimcJS.hash(cmt, "0");
+
         console.log("Deposit")
         console.log("root before deposit", await getRoot(contract))
-        await deposit(contract, signer, cmt)
+        await deposit(contract, signer, leaf)
         console.log("root after deposit", await getRoot(contract))
 
-        let root = mimcJS.hash(cmt, "0");
-
-        let nums = generate_salt(8, 154)
-        for (var i = 0; i < 8; i++) {
-            if (path2RootPos[i] === 1) {
-                root = mimcJS.hash(root, nums[i])
-            } else {
-                root = mimcJS.hash(nums[i], root)
-            }
-        }
+        let [merklePath, path2RootPos2] = await getMerkleProof(contract, cmtIdx)
+        let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmtIdx, merklePath);
+        console.log("Circuit root", mimcJS.F.toString(root))
 
         let input = {
             "root": mimcJS.F.toString(root),
-            //"root": await getRoot(contract),
+            //"root": await getRoot(contract),  // should be this?
             "nullifierHash": mimcJS.F.toString(nullifierHash),
             "secret": secret,
-            "paths2_root": nums,
+            "paths2_root": merklePath,
             "paths2_root_pos": path2RootPos
         }
         console.log(input)
@@ -165,6 +165,7 @@ describe("Mixer test suite", () => {
 
         let inputTest = [
             mimcJS.F.toString(root),
+            //await getRoot(contract),
             mimcJS.F.toString(nullifierHash)
         ]
         console.log("Withdraw", inputTest)

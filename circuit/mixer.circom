@@ -30,6 +30,8 @@ template Withdraw(k){
         computed_root.paths2_root[w] <== paths2_root[w];
         computed_root.paths2_root_pos[w] <== paths2_root_pos[w];
     }
+    log(root);
+    log(computed_root.out);
     root === computed_root.out;
 
 	// nullifier constrain

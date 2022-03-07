@@ -57,7 +57,7 @@ contract MerkleTree {
             index = uint256(index/2);
         }
         emit MerkleProof(merkleProof, address_bits);
-        return(merkleProof, address_bits);   
+        return(merkleProof, address_bits);
     }
 
     function getMimc(uint256 input, uint256 sk) public returns ( uint256) { 
