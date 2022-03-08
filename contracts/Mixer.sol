@@ -26,20 +26,19 @@ contract Mixer is MerkleTree ,Verifier {
         require(!commitments[_commitment], "The commitment has been submitted");
         // Make sure the user paid the good denomination to append a commitment in the tree
         // (Need to pay AMOUNT ether to participate in the mixing)
-        require(msg.value == AMOUNT);
+        require(msg.value == AMOUNT, "Amount not meet");
         uint256 insertedIndex = insert(_commitment);
         commitments[_commitment] = true;
         roots[getRootEx(_commitment, cmtIdx)] = true;
         emit Deposit(_commitment,insertedIndex,block.timestamp);
     }
 
-    // The withdraw function enables a user to redeem AMOUNT ether by providing 
-    // a valid proof of knowledge of the secret
-    function withdraw(uint[2] memory a,
-            uint[2][2] memory b,
-            uint[2] memory c,
-            uint[2] memory input) public payable {
-
+    // The withdraw function enables a user to redeem AMOUNT ether by providing a valid proof of knowledge of the secret
+    function withdraw(
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory input) public payable {
         uint256 _root = uint256(input[0]);
         uint256 _nullifierHash = uint256(input[1]);
 
@@ -58,12 +57,12 @@ contract Mixer is MerkleTree ,Verifier {
     // to use it to pay someone else
     // (ie: "spend" his nullifier and creating a new commitment in the tree to pay someone else)
     function forward (
-            uint[2] memory a,
-            uint[2][2] memory b,
-            uint[2] memory c,
-            uint[2] memory input,
-            uint256 _commitment,
-            uint256 _cmtIdx
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory input,
+        uint256 _commitment,
+        uint256 _cmtIdx
     ) public returns (address) {
 
         uint256 _nullifierHash = uint256(input[1]);
@@ -79,7 +78,7 @@ contract Mixer is MerkleTree ,Verifier {
         // 2. The proof given is valid
         uint insertedIndex = insert(_commitment);
         roots[getRootEx(_commitment, _cmtIdx)] = true;
-        // The caller of the "forward" function now has "spent" his nullifier to pay someone else 
+        // The caller of the "forward" function now has "spent" his nullifier to pay someone else
         // This allow for people to use the payments they receive as a way to pay others
         nullifierHashes[_nullifierHash] = true;
         emit Forward(_commitment,insertedIndex,block.timestamp);

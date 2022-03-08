@@ -100,6 +100,10 @@ Start the local node.
 
 Run the test.
 
+### Contribution
+
+Use `solium` to format the solidity code.
+
 ### Notices
 * fix the circuits to verify the new root
 
