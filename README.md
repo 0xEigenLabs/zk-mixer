@@ -102,7 +102,7 @@ Run the test.
 
 ### Contribution
 
-Use `solium` to format the solidity code.
+Use [solium](https://ethlint.readthedocs.io/en/latest/user-guide.html) to format the solidity code.
 
 ### Notices
 * fix the circuits to verify the new root
