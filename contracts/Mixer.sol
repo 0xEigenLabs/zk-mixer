@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import "./MerkleTree.sol";
 import "./verifier.sol";
-import "hardhat/console.sol";
 
 contract Mixer is MerkleTree ,Verifier {
+    mapping (uint256 => bool) public roots;
     mapping(uint256 => bool) public nullifierHashes;
     mapping(uint256 => bool) public commitments;
 
@@ -22,16 +22,14 @@ contract Mixer is MerkleTree ,Verifier {
 
     // Deposit takes a commitment as a parameter
     // The commitment in inserted in the Merkle Tree of commitment
-    function deposit(uint256 _commitment) public payable{
+    function deposit(uint256 _commitment, uint256 cmtIdx) public payable{
         require(!commitments[_commitment], "The commitment has been submitted");
         // Make sure the user paid the good denomination to append a commitment in the tree
         // (Need to pay AMOUNT ether to participate in the mixing)
-        console.log("commitment");
-        console.log(_commitment);
         require(msg.value == AMOUNT);
         uint256 insertedIndex = insert(_commitment);
         commitments[_commitment] = true;
-        roots[getRoot()] = true;
+        roots[getRootEx(_commitment, cmtIdx)] = true;
         emit Deposit(_commitment,insertedIndex,block.timestamp);
     }
 
@@ -64,7 +62,8 @@ contract Mixer is MerkleTree ,Verifier {
             uint[2][2] memory b,
             uint[2] memory c,
             uint[2] memory input,
-            uint256 _commitment
+            uint256 _commitment,
+            uint256 _cmtIdx
     ) public returns (address) {
 
         uint256 _nullifierHash = uint256(input[1]);
@@ -79,7 +78,7 @@ contract Mixer is MerkleTree ,Verifier {
         // 1. We checked that the forward request was triggered by the recipient of a past payment who has an "unspent nullifier"
         // 2. The proof given is valid
         uint insertedIndex = insert(_commitment);
-        roots[getRoot()] = true;
+        roots[getRootEx(_commitment, _cmtIdx)] = true;
         // The caller of the "forward" function now has "spent" his nullifier to pay someone else 
         // This allow for people to use the payments they receive as a way to pay others
         nullifierHashes[_nullifierHash] = true;

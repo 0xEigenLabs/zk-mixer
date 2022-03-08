@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >0.5.16;
+import "hardhat/console.sol";
 
 abstract contract IMimc {
   function MiMCpe7(uint256 in_x,uint256 in_k) virtual public returns(uint256 out_x);
@@ -7,12 +8,11 @@ abstract contract IMimc {
 
 contract MerkleTree {
     mapping (uint256 => bool) public serials;
-    mapping (uint256 => bool) public roots;
-    uint public tree_depth = 8;
-    uint public no_leaves = 256;
+    uint public constant tree_depth = 8;
+    uint public constant no_leaves = 256;
     struct Mtree {
         uint256 cur;
-        uint256[256][9] leaves2; // tree depth + 1
+        uint256[no_leaves][tree_depth + 1] leaves2; // tree depth + 1
     }
 
     Mtree public MT;
@@ -22,6 +22,8 @@ contract MerkleTree {
     event LeafAdded(uint256 index);
 
     event TestMimc(uint256);
+
+    event RootEx(uint256);
 
     event MerkleProof(uint256[8] , uint256[8] );
 
@@ -35,7 +37,7 @@ contract MerkleTree {
         MT.leaves2[0][MT.cur] = com;
         updateTree();
         emit LeafAdded(MT.cur);
-        MT.cur++;
+        ++ MT.cur;
 
         return MT.cur-1;
     }
@@ -45,7 +47,6 @@ contract MerkleTree {
         uint256[8] memory merkleProof;
 
         for (uint256 i=0 ; i < tree_depth; i++) {
-            // address_bits[i] = index%2;
             if (index%2 == 0) {
                 address_bits[i]=1;
                 merkleProof[i] = getUniqueLeaf(MT.leaves2[i][index + 1],i);
@@ -75,20 +76,19 @@ contract MerkleTree {
     }
 
     function updateTree() public returns(uint256 root) {
-        uint256 CurrentIndex = MT.cur;
+        uint256 index = MT.cur;
         uint256 leaf1;
         uint256 leaf2;
         for (uint256 i=0 ; i < tree_depth; i++) {
-            uint256 NextIndex = CurrentIndex/2;
-            if (CurrentIndex%2 == 0) {
-                leaf1 =  MT.leaves2[i][CurrentIndex];
-                leaf2 = getUniqueLeaf(MT.leaves2[i][CurrentIndex + 1], i);
+            if (index%2 == 0) {
+                leaf1 =  MT.leaves2[i][index];
+                leaf2 = getUniqueLeaf(MT.leaves2[i][index + 1], i);
             } else {
-                leaf1 = getUniqueLeaf(MT.leaves2[i][CurrentIndex - 1], i);
-                leaf2 =  MT.leaves2[i][CurrentIndex];
+                leaf1 = getUniqueLeaf(MT.leaves2[i][index - 1], i);
+                leaf2 =  MT.leaves2[i][index];
             }
-            MT.leaves2[i+1][NextIndex] = mimc.MiMCpe7( leaf1, leaf2);
-            CurrentIndex = NextIndex;
+            index = uint256(index/2);
+            MT.leaves2[i+1][index] = mimc.MiMCpe7(leaf1, leaf2);
         }
         return MT.leaves2[tree_depth][0];
     }
@@ -99,6 +99,23 @@ contract MerkleTree {
 
     function getRoot() public view returns(uint256 root) {
         root = MT.leaves2[tree_depth][0];
+    }
+
+    function getRootEx(uint leaf, uint cmtIndex) public returns (uint256 root) {
+        uint256 index = cmtIndex;
+        root = leaf;
+        for (uint256 i=0 ; i < tree_depth; i++) {
+            if (index%2 == 0) {
+                leaf = getUniqueLeaf(MT.leaves2[i][index + 1],i);
+                root = mimc.MiMCpe7(leaf, root);
+            } else {
+                leaf = getUniqueLeaf(MT.leaves2[i][index - 1],i);
+                root = mimc.MiMCpe7(root, leaf);
+            }
+            index = uint256(index/2);
+        }
+        emit RootEx(root);
+        return root;
     }
 }
 

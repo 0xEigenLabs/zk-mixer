@@ -108,6 +108,8 @@ Deploy Mixer, which is derivative of Merkle Tree and Verifier.
 
 ### TODO
 * fix the circuits to verify the new root
+This is raised by the inconsistent Merkle Root calculation, we use getRootEx to calculate the root.
+This way will expose the path_root_pos information, which is considered private in Mixer circuit.
 * tx origin check before deposit
 
 ### Reference

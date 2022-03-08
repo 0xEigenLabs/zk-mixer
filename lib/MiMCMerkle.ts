@@ -88,16 +88,19 @@ export const rootFromLeafAndPath = function(leaf, idx, merkle_path){
     const depth = merkle_path.length
     const merkle_path_pos = module.exports.idxToBinaryPos(idx, depth)
     let root = leaf;
+    let res = []
+    res.push(root)
     for (var i = 0; i < depth; i++) {
         if (merkle_path_pos[i] === 1) {
             root = mimcjs.hash(root, merkle_path[i]);
         } else {
             root = mimcjs.hash(merkle_path[i], root);
         }
+        res.push(root)
     }
-    return root;
+    return res;
   } else {
-    return leaf
+    return [leaf]
   }
 }
 
@@ -115,7 +118,6 @@ export const padLeafArray = function(leafArray, zeroLeaf, fillerLength){
     console.log("please enter pubKeys as an array")
   }
 }
-
 
 // fill a leaf hash array with zero leaf hashes until it is a power of 2
 export const padLeafHashArray = function(leafHashArray, zeroLeafHash, fillerLength){
@@ -198,7 +200,6 @@ export const binaryPosToIdx = function(binaryPos){
 }
 
 export const idxToBinaryPos = function(idx, binLength){
-
   let binString = idx.toString(2);
   let binPos = Array(binLength).fill(0)
   for (var j = 0; j < binString.length; j++){

@@ -7,8 +7,8 @@
     "lint": "./node_modules/.bin/eslint src --ext .ts",
     "clean": "rm -rf build dist typechain cache artifacts",
     "compile": "hardhat compile",
-    "build": "yarn && ./node_modules/.bin/tsc",
-    "test": "yarn compile && npx hardhat test"
+    "build": "yarn clean && yarn && ./node_modules/.bin/tsc",
+    "test": "yarn build && yarn compile && npx hardhat test"
   },
   "author": "",
   "license": "Apache-2.0",

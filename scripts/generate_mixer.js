@@ -1,6 +1,7 @@
 const fs = require('fs');
 const {randomBytes} = require("crypto");
 const BigNumber = require("bignumber.js");
+const MIMCMerkle = require("../dist/lib/MiMCMerkle");
 
 const cls = require("circomlibjs");
 function Bits2Num(n, in1) {
@@ -16,9 +17,10 @@ function Bits2Num(n, in1) {
 
 async function main() {
   let mimcjs = await cls.buildMimc7();
+  await MIMCMerkle.init();
   // calculate cmt nullifierHash
-  const path2_root_pos = [1, 1, 1, 1, 1, 0, 1, 1]
-  const secret = 120;
+  const path2_root_pos = [1, 1, 1, 1, 1, 1, 1, 1]
+  const secret = "0";
   const LEAF_NUM = 8;
   //console.log(path2_root_pos.join(""))
   // 255 = 11111111b
@@ -39,24 +41,19 @@ async function main() {
     '11868459870544964516983456008242250460119356993157504951373700810334626455267',
     '17452340833314273101389791943519612073692685328163719737408744891984034913325',
     '5253775198292439148470029927208469781432760606734473405438165226265735347735',
-    '14858461545237595239767639763214142711575238949421318668721596715479466649076'
+    '17476463353520328933908815096303937517517835673952302892565831818490112348179'
   ]
 
   // get merkle root
-  let root = mimcjs.hash(cmt, 0);
-  console.log("1111", mimcjs.F.toString(root))
+  let leaf = mimcjs.hash(cmt, 0);
 
-  for (var i = 0; i < Number(LEAF_NUM); i++) {
-    //console.log(root)
-    if (path2_root_pos[i] === 1) {
-      root = mimcjs.hash(root, merklePath[i])
-    } else {
-      root = mimcjs.hash(merklePath[i], root)
-    }
+  let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmt_index, merklePath);
+
+  for (var i = 0; i < root.length; i ++) {
+    console.log(mimcjs.F.toString(root[i]))
   }
-
   const inputs = {
-    "root": mimcjs.F.toString(root),
+    "root": mimcjs.F.toString(root[-1]),
     "nullifierHash": mimcjs.F.toString(nullifierHash),
     "secret": secret,
     "paths2_root": merklePath,
