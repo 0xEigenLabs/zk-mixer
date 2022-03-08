@@ -92,24 +92,20 @@ merkle_root[v].k<== merkle_root[v-1].out - paths2_root_pos[v]* (merkle_root[v-1]
 
 Here we use `Groth16` and curve bn128 to generate verification key and proof key.  More details are presented in reference 1.  One point should be mentioned is [powersoftau](https://eprint.iacr.org/2017/1050), which adopts MPC to generate verifiable Random Beacon as CRS,  to secure their secret randomness throughout the duration of the protocol.
 
-* `yarn deploy_mimc`
-Deploy MiMC contract.
+* `npx hardhat node`
 
-* `yarn call_mimc`
-Test if MiMC contract deployed successfully
+Start the local node.
 
-* `truffle migrate --reset`
-Deploy Mixer, which is derivative of Merkle Tree and Verifier.
+* `yarn test`
 
-* `yarn call_mixer`
->* deposit(cmt, amount): load the parameter from `circuit/cmt.json`, and deposit amount into Mixer.
->* withdraw(a, b, c, input): a, b, c can be obtained by `snarkjs generatecall`, and input is from `circuit/public.json` , and this method refund the monery from Mixer to `msg.from`
->* forward(a, b, c, input, cmt): forward current account's asset to another anonymous account.
+Run the test.
 
-### TODO
+### Notices
 * fix the circuits to verify the new root
+
 This is raised by the inconsistent Merkle Root calculation, we use getRootEx to calculate the root.
-This way will expose the path_root_pos information, which is considered private in Mixer circuit.
+This way will expose the `path_root_pos` information, which is considered private in Mixer circuit.
+
 * tx origin check before deposit
 
 ### Reference
