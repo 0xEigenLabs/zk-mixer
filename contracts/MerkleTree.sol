@@ -20,18 +20,15 @@ contract MerkleTree {
     IMimc mimc;
 
     event LeafAdded(uint256 index);
-
     event TestMimc(uint256);
-
-    event RootEx(uint256);
-
+    //event RootEx(uint256);
     event MerkleProof(uint256[8] , uint256[8] );
 
     constructor(address _mimc) public {
         mimc = IMimc(_mimc);
     }
 
-    //Merkletree.append(com)
+    // Merkletree.append(com), insert one by one
     function insert(uint256 com) public returns (uint256 ) {
         require (MT.cur != no_leaves );
         MT.leaves2[0][MT.cur] = com;
@@ -46,13 +43,13 @@ contract MerkleTree {
         uint256[8] memory address_bits;
         uint256[8] memory merkleProof;
 
-        for (uint256 i=0 ; i < tree_depth; i++) {
-            if (index%2 == 0) {
-                address_bits[i]=1;
+        for (uint256 i = 0 ; i < tree_depth; i++) {
+            if (index % 2 == 0) {
+                address_bits[i] = 1;
                 merkleProof[i] = getUniqueLeaf(MT.leaves2[i][index + 1],i);
             }
             else {
-                address_bits[i]=0;
+                address_bits[i] = 0;
                 merkleProof[i] = getUniqueLeaf(MT.leaves2[i][index - 1],i);
             }
             index = uint256(index/2);
@@ -80,11 +77,10 @@ contract MerkleTree {
         uint256 leaf1;
         uint256 leaf2;
         for (uint256 i=0 ; i < tree_depth; i++) {
-            if (index%2 == 0) {
+            if (index % 2 == 0) {
                 leaf1 =  MT.leaves2[i][index];
                 leaf2 = getUniqueLeaf(MT.leaves2[i][index + 1], i);
-            } else {
-                leaf1 = getUniqueLeaf(MT.leaves2[i][index - 1], i);
+            } else { leaf1 = getUniqueLeaf(MT.leaves2[i][index - 1], i);
                 leaf2 =  MT.leaves2[i][index];
             }
             index = uint256(index/2);
@@ -101,6 +97,7 @@ contract MerkleTree {
         root = MT.leaves2[tree_depth][0];
     }
 
+    /*
     function getRootEx(uint leaf, uint cmtIndex) public returns (uint256 root) {
         uint256 index = cmtIndex;
         root = leaf;
@@ -117,6 +114,7 @@ contract MerkleTree {
         emit RootEx(root);
         return root;
     }
+    */
 }
 
 

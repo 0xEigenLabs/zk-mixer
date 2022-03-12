@@ -30,14 +30,12 @@ template Withdraw(k){
         computed_root.paths2_root[w] <== paths2_root[w];
         computed_root.paths2_root_pos[w] <== paths2_root_pos[w];
     }
-    log(root);
-    log(computed_root.out);
     root === computed_root.out;
 
 	// nullifier constrain
 	component cmt_index = Bits2Num(k);
 	for (var i = 0 ;i < k ; i++){
-		cmt_index.in[i] <== paths2_root_pos[i];
+		cmt_index.in[i] <== 1 - paths2_root_pos[i];
 	}
 
 	component nullifier = MiMC7(91);

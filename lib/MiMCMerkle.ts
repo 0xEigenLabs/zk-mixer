@@ -88,19 +88,16 @@ export const rootFromLeafAndPath = function(leaf, idx, merkle_path){
     const depth = merkle_path.length
     const merkle_path_pos = module.exports.idxToBinaryPos(idx, depth)
     let root = leaf;
-    let res = []
-    res.push(root)
     for (var i = 0; i < depth; i++) {
-        if (merkle_path_pos[i] === 1) {
+        if (merkle_path_pos[i] == 1) {
             root = mimcjs.hash(root, merkle_path[i]);
         } else {
             root = mimcjs.hash(merkle_path[i], root);
         }
-        res.push(root)
     }
-    return res;
+    return root;
   } else {
-    return [leaf]
+    return leaf;
   }
 }
 

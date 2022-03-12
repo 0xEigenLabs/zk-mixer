@@ -19,13 +19,14 @@ async function main() {
   let mimcjs = await cls.buildMimc7();
   await MIMCMerkle.init();
   // calculate cmt nullifierHash
-  const path2_root_pos = [1, 1, 1, 1, 1, 1, 1, 1]
+  const path2_root_pos = [0, 0, 0, 0, 0, 0, 0, 0]
+  const path2_root_pos2 = [1, 1, 1, 1, 1, 1, 1, 1]
   const secret = "0";
   const LEAF_NUM = 8;
   //console.log(path2_root_pos.join(""))
   // 255 = 11111111b
   //const cmt_index = parseInt(path2_root_pos.reverse().join(""), 2)
-  const cmt_index = Bits2Num(LEAF_NUM, path2_root_pos)
+  const cmt_index = Bits2Num(LEAF_NUM, path2_root_pos2)
   //console.log("cmt index", cmt_index)
   const nullifierHash = mimcjs.hash(cmt_index, secret)
   //console.log("nullifierHash", nullifierHash)
@@ -41,19 +42,24 @@ async function main() {
     '11868459870544964516983456008242250460119356993157504951373700810334626455267',
     '17452340833314273101389791943519612073692685328163719737408744891984034913325',
     '5253775198292439148470029927208469781432760606734473405438165226265735347735',
-    '17476463353520328933908815096303937517517835673952302892565831818490112348179'
+    '9586203148669237657308746417333646936338855598595657703565568663564319347700'
   ]
 
   // get merkle root
-  let leaf = mimcjs.hash(cmt, 0);
+  let root = mimcjs.hash(cmt, 0);
 
-  let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmt_index, merklePath);
+  //let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmt_index, merklePath);
 
-  for (var i = 0; i < root.length; i ++) {
-    console.log(mimcjs.F.toString(root[i]))
+  for (var i = 0; i < 8; i ++) {
+    if (path2_root_pos[i] == 1) {
+      root = mimcjs.hash(root, merklePath[i])
+    } else {
+      root = mimcjs.hash(merklePath[i], root)
+    }
   }
+
   const inputs = {
-    "root": mimcjs.F.toString(root[-1]),
+    "root": mimcjs.F.toString(root),
     "nullifierHash": mimcjs.F.toString(nullifierHash),
     "secret": secret,
     "paths2_root": merklePath,
