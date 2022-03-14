@@ -12,11 +12,6 @@ A coin mixer implementation based on ZKP for privacy-preserving DeFi and DAO. NO
 	- Mixer
 	- Merkle
 
-### Compile
-
-```
-yarn test
-```
 
 #### Compile circuits
 
@@ -24,6 +19,8 @@ yarn test
 $ cd circuit && ./run.sh mixer
 ```
 Wait until you are asked to type in the secret phase, twice!!
+
+Then run the UT by `yarn test`
 
 ### How it work
 
