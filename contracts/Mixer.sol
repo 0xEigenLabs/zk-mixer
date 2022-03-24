@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./MerkleTree.sol";
 import "./verifier.sol";
 
-contract Mixer is MerkleTree ,Verifier {
+contract Mixer is MerkleTree ,PlonkVerifier {
     mapping (uint256 => bool) public roots;
     mapping(uint256 => bool) public nullifierHashes;
     mapping(uint256 => bool) public commitments;
