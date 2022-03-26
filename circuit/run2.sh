@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-circuit_name=mixer
+circuit_name=$1
 base_dir=${circuit_name}_js
 
 circom ${circuit_name}.circom --r1cs --wasm --sym
@@ -26,6 +26,7 @@ snarkjs plonk setup ${circuit_name}.r1cs pot13_final.ptau circuit_final.zkey
 snarkjs zkey export verificationkey circuit_final.zkey verification_key.json
 snarkjs plonk prove circuit_final.zkey witness.wtns proof.json public.json
 snarkjs plonk verify verification_key.json public.json proof.json
+snarkjs zkey export soliditycalldata public.json proof.json
+cp public.json proof.json ../
 cd ..
 snarkjs zkey export solidityverifier ${base_dir}/circuit_final.zkey ../contracts/verifier.sol
-snarkjs zkey export soliditycalldata ${base_dir}/public.json ${base_dir}/proof.json
