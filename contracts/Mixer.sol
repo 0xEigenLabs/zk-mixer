@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./MerkleTree.sol";
 import "./verifier.sol";
 
-contract Mixer is MerkleTree ,Verifier {
+contract Mixer is MerkleTree ,PlonkVerifier {
     mapping (uint256 => bool) public roots;
     mapping(uint256 => bool) public nullifierHashes;
     mapping(uint256 => bool) public commitments;
@@ -35,16 +35,14 @@ contract Mixer is MerkleTree ,Verifier {
 
     // The withdraw function enables a user to redeem AMOUNT ether by providing a valid proof of knowledge of the secret
     function withdraw(
-        uint[2] memory a,
-        uint[2][2] memory b,
-        uint[2] memory c,
-        uint[2] memory input) public payable {
+        bytes memory proof,
+        uint[] memory input) public payable {
         uint256 _root = uint256(input[0]);
         uint256 _nullifierHash = uint256(input[1]);
 
         require(!nullifierHashes[_nullifierHash], "The note has been already spent");
         require(isKnownRoot(_root), "Cannot find your merkle root"); // Make sure to use a recent one
-        require(verifyProof(a,b,c,input), "Invalid withdraw proof");
+        require(verifyProof(proof,input), "Invalid withdraw proof");
 
         nullifierHashes[_nullifierHash] = true;
         payable(msg.sender).transfer(AMOUNT);
@@ -57,10 +55,8 @@ contract Mixer is MerkleTree ,Verifier {
     // to use it to pay someone else
     // (ie: "spend" his nullifier and creating a new commitment in the tree to pay someone else)
     function forward (
-        uint[2] memory a,
-        uint[2][2] memory b,
-        uint[2] memory c,
-        uint[2] memory input,
+        bytes memory proof,
+        uint[] memory input,
         uint256 _commitment
     ) public returns (address) {
 
@@ -70,7 +66,7 @@ contract Mixer is MerkleTree ,Verifier {
         require(!commitments[_commitment], "The commitment has been submitted");
         require(!nullifierHashes[_nullifierHash], "The note has been already spent");
         require(isKnownRoot(_root), "Cannot find your merkle root"); // Make sure to use a recent one
-        require(verifyProof(a,b,c,input), "Invalid withdraw proof");
+        require(verifyProof(proof,input), "Invalid withdraw proof");
 
         // We insert the new commitment in the tree once:
         // 1. We checked that the forward request was triggered by the recipient of a past payment who has an "unspent nullifier"
