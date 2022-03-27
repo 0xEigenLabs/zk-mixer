@@ -12,7 +12,8 @@ contract MerkleTree {
     uint public constant no_leaves = 256;
     struct Mtree {
         uint256 cur;
-        uint256[no_leaves][tree_depth + 1] leaves2; // tree depth + 1
+        //uint256[no_leaves][tree_depth + 1] leaves2; // tree depth + 1
+        uint256[tree_depth + 1][no_leaves] leaves2; // tree depth + 1
     }
 
     Mtree public MT;
