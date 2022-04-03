@@ -1,7 +1,7 @@
 pragma circom 2.0.0;
 include "./get_merkle_root.circom";
-include "../circomlib/circuits/mimc.circom";
-include "../circomlib/circuits/bitify.circom";
+include "../node_modules/circomlib/circuits/mimc.circom";
+include "../node_modules/circomlib/circuits/bitify.circom";
 
 template Withdraw(k){
 	// public input
