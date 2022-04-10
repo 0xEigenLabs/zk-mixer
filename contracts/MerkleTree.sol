@@ -3,7 +3,7 @@ pragma solidity >0.5.16;
 import "hardhat/console.sol";
 
 abstract contract IMimc {
-  function MiMCpe7(uint256 in_x,uint256 in_k) virtual public returns(uint256 out_x);
+    function MiMCpe7(uint256 in_x,uint256 in_k) virtual public returns(uint256 out_x);
 }
 
 contract MerkleTree {
@@ -81,7 +81,7 @@ contract MerkleTree {
                 leaf1 =  MT.leaves2[i][index];
                 leaf2 = getUniqueLeaf(MT.leaves2[i][index + 1], i);
             } else { leaf1 = getUniqueLeaf(MT.leaves2[i][index - 1], i);
-                leaf2 =  MT.leaves2[i][index];
+            leaf2 =  MT.leaves2[i][index];
             }
             index = uint256(index/2);
             MT.leaves2[i+1][index] = mimc.MiMCpe7(leaf1, leaf2);
@@ -98,23 +98,23 @@ contract MerkleTree {
     }
 
     /*
-    function getRootEx(uint leaf, uint cmtIndex) public returns (uint256 root) {
-        uint256 index = cmtIndex;
-        root = leaf;
-        for (uint256 i=0 ; i < tree_depth; i++) {
-            if (index%2 == 0) {
-                leaf = getUniqueLeaf(MT.leaves2[i][index + 1],i);
-                root = mimc.MiMCpe7(leaf, root);
-            } else {
-                leaf = getUniqueLeaf(MT.leaves2[i][index - 1],i);
-                root = mimc.MiMCpe7(root, leaf);
-            }
-            index = uint256(index/2);
-        }
-        emit RootEx(root);
-        return root;
-    }
-    */
+       function getRootEx(uint leaf, uint cmtIndex) public returns (uint256 root) {
+       uint256 index = cmtIndex;
+       root = leaf;
+       for (uint256 i=0 ; i < tree_depth; i++) {
+       if (index%2 == 0) {
+       leaf = getUniqueLeaf(MT.leaves2[i][index + 1],i);
+       root = mimc.MiMCpe7(leaf, root);
+       } else {
+       leaf = getUniqueLeaf(MT.leaves2[i][index - 1],i);
+       root = mimc.MiMCpe7(root, leaf);
+       }
+       index = uint256(index/2);
+       }
+       emit RootEx(root);
+       return root;
+       }
+     */
 }
 
 
