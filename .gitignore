@@ -1,10 +1,8 @@
 node_modules
 
 #Hardhat files
-cache
 artifacts
 typechain
-circuit/mixer_js
 
 node_modules
 .env
@@ -13,5 +11,4 @@ coverage.json
 typechain
 
 #Hardhat files
-cache
 artifacts
