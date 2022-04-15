@@ -107,7 +107,6 @@ contract PlonkVerifier {
     
     uint16 constant lastMem = 768;
 
-
     function verifyProof(bytes memory proof, uint[] memory pubSignals) public view returns (bool) {
         assembly {
             /////////
@@ -203,12 +202,24 @@ contract PlonkVerifier {
                 // Points are checked in the point operations precompiled smart contracts
             }
             
-            function calculateChallanges(pProof, pMem) {
+            function calculateChallanges(pProof, pMem, pPublic) {
             
                 let a
                 let b
+
                 
-                b := mod(keccak256(add(pProof, pA), 192), q) 
+                mstore( add(pMem, 736 ), mload( add( pPublic, 32)))
+                
+                mstore( add(pMem, 768 ), mload( add( pPublic, 64)))
+                
+                mstore( add(pMem, 800 ), mload( add( pProof, pA)))
+                mstore( add(pMem, 832 ), mload( add( pProof, add(pA,32))))
+                mstore( add(pMem, 864 ), mload( add( pProof, add(pA,64))))
+                mstore( add(pMem, 896 ), mload( add( pProof, add(pA,96))))
+                mstore( add(pMem, 928 ), mload( add( pProof, add(pA,128))))
+                mstore( add(pMem, 960 ), mload( add( pProof, add(pA,160))))
+                
+                b := mod(keccak256(add(pMem, lastMem), 256), q) 
                 mstore( add(pMem, pBeta), b)
                 mstore( add(pMem, pGamma), mod(keccak256(add(pMem, pBeta), 32), q))
                 mstore( add(pMem, pAlpha), mod(keccak256(add(pProof, pZ), 64), q))
@@ -734,7 +745,7 @@ contract PlonkVerifier {
             mstore(0x40, add(pMem, lastMem))
             
             checkInput(proof)
-            calculateChallanges(proof, pMem)
+            calculateChallanges(proof, pMem, pubSignals)
             calculateLagrange(pMem)
             calculatePl(pMem, pubSignals)
             calculateT(proof, pMem)
