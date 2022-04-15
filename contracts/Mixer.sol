@@ -9,9 +9,6 @@ contract Mixer is MerkleTree ,PlonkVerifier {
     mapping(uint256 => bool) public nullifierHashes;
     mapping(uint256 => bool) public commitments;
 
-    // Denomination of each token
-    //uint256 constant public AMOUNT = 0.01 ether;
-
     event Deposit(uint256 indexed commitment, uint256 leafIndex, uint256 timestamp);
     event Withdraw(address to, uint256 nullifierHash);
     event Forward(uint256 indexed commitment, uint256 leafIndex, uint256 timestamp);
