@@ -24,20 +24,12 @@ Then run the UT by `yarn test`
 
 ### How it work
 
-Mixer is built on `Groth16` and `Merkle Tree`.
+Mixer is built on `PlonK` and `Merkle Tree`.
 
-* Groth16
+* PlonK
 
-Groth16 is one of the most famous zksnark proving schemes (in addition to pghr13, gm17, etc.). 
-Compared with the previous proof protocol, groth16 has the characteristics of small proof data 
-(only three proof data) and fast verification speed (only one equation needs to be verified). 
-At present, groth16 has been widely used in many projects, such as zcash, filecoin, etc.
-Groth16 is a zero knowledge proof protocol proposed by Daniel Jens growth in his paper 
-"on the size of pairing based non interactive arguments" published in 2016.
-The name of the general algorithm is composed of the first letter of the author’s surname 
-and the year.
-
-More details are presented [here](https://eprint.iacr.org/2016/260.pdf).
+[PlonK](https://eprint.iacr.org/2019/953.pdf) is a universal SNARK construction with fully succinct verification, and significantly lower prover running time (roughly 7.5-20 times fewer group exponentiations than [MBKM19](https://eprint.iacr.org/2019/099.phf) in
+the fully succinct verifier mode depending on circuit structure).
 
 * MIMC
 MiMC is a block cipher and hash function family designed specifically for SNARK applications. 
@@ -88,7 +80,7 @@ merkle_root[v].k<== merkle_root[v-1].out - paths2_root_pos[v]* (merkle_root[v-1]
 
 * `./run.sh mixer`
 
-Here we use `Groth16` and curve bn128 to generate verification key and proof key.  More details are presented in reference 1.  One point should be mentioned is [powersoftau](https://eprint.iacr.org/2017/1050), which adopts MPC to generate verifiable Random Beacon as CRS,  to secure their secret randomness throughout the duration of the protocol.
+Here we use `PlonK` and curve bn128 to generate verification key and proof key.  More details are presented in reference 1.  One point should be mentioned is [powersoftau](https://eprint.iacr.org/2017/1050), which adopts MPC to generate verifiable Random Beacon as CRS,  to secure their secret randomness throughout the duration of the protocol.
 
 * `npx hardhat node`
 
