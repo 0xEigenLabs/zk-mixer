@@ -45,8 +45,9 @@ async function main() {
     '9586203148669237657308746417333646936338855598595657703565568663564319347700'
   ]
 
+  const amount = "100";
   // get merkle root
-  let root = mimcjs.hash(cmt, 0);
+  let root = mimcjs.hash(cmt, amount);
 
   //let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmt_index, merklePath);
 
@@ -60,6 +61,7 @@ async function main() {
 
   const inputs = {
     "root": mimcjs.F.toString(root),
+    "amount": amount, // unit: wei
     "nullifierHash": mimcjs.F.toString(nullifierHash),
     "secret": secret,
     "paths2_root": merklePath,

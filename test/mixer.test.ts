@@ -17,7 +17,8 @@ const provider = waffle.provider
 
 const cls = require("circomlibjs");
 const SEED = "mimc";
-var Amount = ethers.utils.parseEther('0.01');
+var Amount = ethers.utils.parseEther('0.02');
+console.log(Amount.toString())
 
 interface Proof {
     a: [BigNumberish, BigNumberish];
@@ -120,7 +121,7 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
     const nullifierHash = mimcJS.hash(cmtIdx, secret)
     let cmt = mimcJS.hash(mimcJS.F.toString(nullifierHash), secret)
 
-    let leaf = mimcJS.hash(cmt, "0");
+    let leaf = mimcJS.hash(cmt, Amount.toString());
 
     console.log("Deposit")
     console.log("root before deposit", await getRoot(contract))
@@ -153,6 +154,7 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
 
     let input = {
         "root": mimcJS.F.toString(root),
+        "amount": Amount.toString(),
         "nullifierHash": mimcJS.F.toString(nullifierHash),
         "secret": secret,
         "paths2_root": merklePath,
@@ -177,7 +179,8 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
     let inputTest = [
         //await getRoot(contract),
         mimcJS.F.toString(root),
-        mimcJS.F.toString(nullifierHash)
+        mimcJS.F.toString(nullifierHash),
+        Amount.toString(),
     ]
     console.log("Withdraw 1111", inputTest)
     await contract.withdraw(

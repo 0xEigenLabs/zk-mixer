@@ -9,9 +9,6 @@ contract Mixer is MerkleTree ,PlonkVerifier {
     mapping(uint256 => bool) public nullifierHashes;
     mapping(uint256 => bool) public commitments;
 
-    // Denomination of each token
-    uint256 constant public AMOUNT = 0.01 ether;
-
     event Deposit(uint256 indexed commitment, uint256 leafIndex, uint256 timestamp);
     event Withdraw(address to, uint256 nullifierHash);
     event Forward(uint256 indexed commitment, uint256 leafIndex, uint256 timestamp);
@@ -26,7 +23,7 @@ contract Mixer is MerkleTree ,PlonkVerifier {
         require(!commitments[_commitment], "The commitment has been submitted");
         // Make sure the user paid the good denomination to append a commitment in the tree
         // (Need to pay AMOUNT ether to participate in the mixing)
-        require(msg.value == AMOUNT, "Amount not meet");
+        //require(msg.value == AMOUNT, "Amount not meet");
         uint256 insertedIndex = insert(_commitment);
         commitments[_commitment] = true;
         roots[getRoot()] = true;
@@ -39,13 +36,14 @@ contract Mixer is MerkleTree ,PlonkVerifier {
         uint[] memory input) public payable {
         uint256 _root = uint256(input[0]);
         uint256 _nullifierHash = uint256(input[1]);
+        uint256 _amount = uint256(input[2]);
 
         require(!nullifierHashes[_nullifierHash], "The note has been already spent");
         require(isKnownRoot(_root), "Cannot find your merkle root"); // Make sure to use a recent one
         require(verifyProof(proof,input), "Invalid withdraw proof");
 
         nullifierHashes[_nullifierHash] = true;
-        payable(msg.sender).transfer(AMOUNT);
+        payable(msg.sender).transfer(_amount);
         emit Withdraw(msg.sender, _nullifierHash);
     }
 

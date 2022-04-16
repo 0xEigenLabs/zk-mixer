@@ -7,6 +7,7 @@ template Withdraw(k){
     // public input
     signal input root;
     signal input nullifierHash;
+    signal input amount;
 
     // private input
     signal input secret;
@@ -21,7 +22,7 @@ template Withdraw(k){
     // root constrain
     component leaf = MiMC7(91);
     leaf.x_in <== cmt.out;
-    leaf.k <== 0;
+    leaf.k <== amount;
 
     component computed_root = GetMerkleRoot(k);
     computed_root.leaf <== leaf.out;
@@ -45,4 +46,4 @@ template Withdraw(k){
     nullifierHash === nullifier.out;
 }
 
-component main {public [root, nullifierHash]} = Withdraw(8);
+component main {public [root, nullifierHash, amount]} = Withdraw(8);

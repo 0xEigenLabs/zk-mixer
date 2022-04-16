@@ -27,6 +27,5 @@ snarkjs zkey export verificationkey circuit_final.zkey verification_key.json
 snarkjs plonk prove circuit_final.zkey witness.wtns proof.json public.json
 snarkjs plonk verify verification_key.json public.json proof.json
 snarkjs zkey export soliditycalldata public.json proof.json
-cp public.json proof.json ../
 cd ..
 snarkjs zkey export solidityverifier ${base_dir}/circuit_final.zkey ../contracts/verifier.sol
