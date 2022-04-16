@@ -120,9 +120,7 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
     console.log("cmtIdx", cmtIdx);
     const nullifierHash = mimcJS.hash(cmtIdx, secret)
     let cmt = mimcJS.hash(mimcJS.F.toString(nullifierHash), secret)
-
     let leaf = mimcJS.hash(cmt, Amount.toString());
-
     console.log("Deposit")
     console.log("root before deposit", await getRoot(contract))
     await deposit(contract, signer, mimcJS.F.toString(leaf))
@@ -167,7 +165,6 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
     const wc = require("../circuit/mixer_js/witness_calculator");
     const buffer = fs.readFileSync(wasm);
     const witnessCalculator = await wc(buffer);
-
     const witnessBuffer = await witnessCalculator.calculateWTNSBin(
         input,
         0
@@ -189,6 +186,73 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
     )
 }
 
+const runForwardTest = async (signer, contract, mimcJS, path2RootPos) => {
+    // secret
+    const secret = "011"
+    const cmtIdx = Bits2Num(8, path2RootPos)
+    const nullifierHash = mimcJS.hash(cmtIdx, secret)
+    let cmt = mimcJS.hash(mimcJS.F.toString(nullifierHash), secret)
+    let leaf = mimcJS.hash(cmt, Amount.toString());
+
+    await deposit(contract, signer, mimcJS.F.toString(leaf))
+    console.log("cmt1",signer, mimcJS.F.toString(leaf))
+    let cmt2=mimcJS.F.toString(mimcJS.hash(mimcJS.hash(mimcJS.F.toString(mimcJS.hash(cmtIdx+1, secret)), secret), Amount.toString()))
+    console.log("cmt2",cmt2)
+
+    let [merklePath, path2RootPos2] = await getMerkleProof(contract, cmtIdx)
+    console.log("Path", merklePath, path2RootPos2)
+
+    let root = leaf;
+    for (var i = 0; i < 8; i++) {
+        if (path2RootPos2[i] == 1) {
+            root = mimcJS.hash(root, merklePath[i])
+        } else {
+            root = mimcJS.hash(merklePath[i], root)
+        }
+        console.log("Circuit", path2RootPos[i], mimcJS.F.toString(root), merklePath[i])
+    }
+    //console.log("shit", mimcJS.F.toString(root), await getRootEx(contract, mimcJS.F.toString(leaf), cmtIdx));
+    expect(mimcJS.F.toString(root)).to.eq(await getRoot(contract));
+    console.log("YES!!!!!!!!!", mimcJS.F.toString(root), root, await getRoot(contract), cmtIdx);
+
+    let input = {
+        "root": mimcJS.F.toString(root),
+        "amount":Amount.toString(),
+        "nullifierHash": mimcJS.F.toString(nullifierHash),
+        "secret": secret,
+        "paths2_root": merklePath,
+        "paths2_root_pos": path2RootPos2
+    }
+
+    let wasm = path.join(__dirname, "../circuit/mixer_js", "mixer.wasm");
+    let zkey = path.join(__dirname, "../circuit/mixer_js", "circuit_final.zkey");
+    let vkeypath = path.join(__dirname, "../circuit/mixer_js", "verification_key.json");
+    const wc = require("../circuit/mixer_js/witness_calculator");
+    const buffer = fs.readFileSync(wasm);
+    const witnessCalculator = await wc(buffer);
+    console.log("witnessCalculator",witnessCalculator)
+    const witnessBuffer = await witnessCalculator.calculateWTNSBin(
+        input,
+        0
+    );
+    const { proof, publicSignals } = await snarkjs.plonk.prove(zkey, witnessBuffer);
+    const res = await snarkjs.plonk.exportSolidityCallData(proof, "");
+    let result = res.substring(0, res.length - 3);
+    console.log(await getRoot(contract));
+    let inputTest = [
+        //await getRoot(contract),
+        mimcJS.F.toString(root),
+        mimcJS.F.toString(nullifierHash)
+    ]
+
+    console.log("Forward 1111", inputTest)
+    await contract.forward(
+        result,
+        inputTest,
+        cmt2
+    )
+
+}
 describe("Mixer test suite", () => {
     let contract
     let mimcJS
@@ -238,4 +302,11 @@ describe("Mixer test suite", () => {
         //path2RootPos = [0, 0, 1, 0, 0, 0, 0, 0]
         //await runTest(signer, contract, mimcJS, path2RootPos)
     })
+
+    it("Test Mixer Forward", async () => {
+        // secret
+        let path2RootPos = [1, 1, 0, 0, 0, 0, 0, 0]
+        await runForwardTest(signer, contract, mimcJS, path2RootPos)
+    })
+
 })
