@@ -1,4 +1,4 @@
-const { waffle, ethers } = require("hardhat");
+const {waffle, ethers} = require("hardhat");
 import { ContractFactory, BigNumberish } from "ethers";
 import { assert, expect } from "chai";
 const BN = require("bn.js");
@@ -12,8 +12,6 @@ import * as MIMCMerkle from "../lib/MiMCMerkle";
 const {
     randomBytes
 } = require('crypto');
-
-const provider = waffle.provider
 
 const cls = require("circomlibjs");
 const SEED = "mimc";
@@ -36,6 +34,18 @@ function Bits2Num(n, in1) {
     }
     return lc1
 }
+
+function parseProof(proof: any): Proof {
+    return {
+        a: [proof.pi_a[0], proof.pi_a[1]],
+        b: [
+            [proof.pi_b[0][1], proof.pi_b[0][0]],
+            [proof.pi_b[1][1], proof.pi_b[1][0]],
+        ],
+        c: [proof.pi_c[0], proof.pi_c[1]],
+    };
+}
+
 
 // deposit
 // 0,1,2,3
@@ -172,9 +182,10 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
         input,
         0
     );
-    const { proof, publicSignals } = await snarkjs.plonk.prove(zkey, witnessBuffer);
-    const res = await snarkjs.plonk.exportSolidityCallData(proof, "");
-    let result = res.substring(0, res.length - 3);
+    const { proof, publicSignals } = await snarkjs.groth16.prove(zkey, witnessBuffer);
+    //const res = await snarkjs.groth16.exportSolidityCallData(proof, "");
+    //let result = res.substring(0, res.length - 3);
+    const {a, b, c} = parseProof(proof);
     console.log(await getRoot(contract));
     let inputTest = [
         //await getRoot(contract),
@@ -182,11 +193,18 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
         mimcJS.F.toString(nullifierHash),
         Amount.toString(),
     ]
-    console.log("Withdraw 1111", inputTest)
-    await contract.withdraw(
-        result,
+    console.log("Withdraw", inputTest)
+    await (await contract.withdraw(
+        a,b,c,
         inputTest
-    )
+    )).wait()
+
+    /* TODO: expcetion raised, catch it
+    await (await contract.withdraw(
+        a,b,c,
+        inputTest
+    )).wait()
+    */
 }
 
 describe("Mixer test suite", () => {
@@ -195,7 +213,8 @@ describe("Mixer test suite", () => {
     let mimcContract
     let signer
     before(async () => {
-        let signer = provider.getSigner(0)
+        const [signer] = await ethers.getSigners();
+        console.log("siger", signer.address);
         mimcJS = await cls.buildMimc7();
         let abi = cls.mimc7Contract.abi
         let createCode = cls.mimc7Contract.createCode
@@ -203,10 +222,13 @@ describe("Mixer test suite", () => {
             abi, createCode(SEED, 91), signer
         )
         mimcContract = await f.deploy()
+        console.log("1111111")
+        await mimcContract.deployed()
 
-        console.log(mimcContract.address)
+        console.log("mimc", mimcContract.address)
         let F = await ethers.getContractFactory("Mixer");
         contract = await F.deploy(mimcContract.address);
+        await contract.deployed()
 
         await MIMCMerkle.init();
     })
