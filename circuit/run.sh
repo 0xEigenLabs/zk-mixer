@@ -22,7 +22,7 @@ node generate_witness.js ${circuit_name}.wasm input.json witness.wtns
 #snarkjs powersoftau prepare phase2 pot13_0001.ptau pot13_final.ptau -v
 
 #Start a new zkey and make a contribution (enter some random text)
-snarkjs groth16 setup ${circuit_name}.r1cs ~/Downloads/powersOfTau28_hez_final_16.ptau circuit_final.zkey
+snarkjs groth16 setup ${circuit_name}.r1cs ../powersOfTau28_hez_final_16.ptau circuit_final.zkey
 snarkjs zkey export verificationkey circuit_final.zkey verification_key.json
 snarkjs groth16 prove circuit_final.zkey witness.wtns proof.json public.json
 snarkjs groth16 verify verification_key.json public.json proof.json

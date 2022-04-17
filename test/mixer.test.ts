@@ -1,4 +1,4 @@
-const {waffle, ethers} = require("hardhat");
+const { waffle, ethers } = require("hardhat");
 import { ContractFactory, BigNumberish } from "ethers";
 import { assert, expect } from "chai";
 const BN = require("bn.js");
@@ -122,21 +122,10 @@ const getUniqueLeaf = (mimc, leaf, depth) => {
     return leaf;
 }
 
-
-const runTest = async (signer, contract, mimcJS, path2RootPos) => {
-    // secret
-    const secret = "011"
-    const cmtIdx = Bits2Num(8, path2RootPos)
-    console.log("cmtIdx", cmtIdx);
+async function verify(contract, mimcJS, cmtIdx, secret) {
     const nullifierHash = mimcJS.hash(cmtIdx, secret)
     let cmt = mimcJS.hash(mimcJS.F.toString(nullifierHash), secret)
-
     let leaf = mimcJS.hash(cmt, Amount.toString());
-
-    console.log("Deposit")
-    console.log("root before deposit", await getRoot(contract))
-    await deposit(contract, signer, mimcJS.F.toString(leaf))
-    console.log("root after deposit", await getRoot(contract))
 
     let [merklePath, path2RootPos2] = await getMerkleProof(contract, cmtIdx)
     console.log("Path", merklePath, path2RootPos2)
@@ -148,7 +137,6 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
        let rrr = mimcJS.F.toString(root[root.length - 1])
        console.log("Roots", rrr, await getRoot(contract));
      */
-
     let root = leaf;
     for (var i = 0; i < 8; i++) {
         if (path2RootPos2[i] == 1) {
@@ -156,7 +144,7 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
         } else {
             root = mimcJS.hash(merklePath[i], root)
         }
-        console.log("Circuit", path2RootPos[i], mimcJS.F.toString(root), merklePath[i])
+        console.log("Circuit", mimcJS.F.toString(root), merklePath[i])
     }
     //console.log("shit", mimcJS.F.toString(root), await getRootEx(contract, mimcJS.F.toString(leaf), cmtIdx));
     expect(mimcJS.F.toString(root)).to.eq(await getRoot(contract));
@@ -185,26 +173,76 @@ const runTest = async (signer, contract, mimcJS, path2RootPos) => {
     const { proof, publicSignals } = await snarkjs.groth16.prove(zkey, witnessBuffer);
     //const res = await snarkjs.groth16.exportSolidityCallData(proof, "");
     //let result = res.substring(0, res.length - 3);
-    const {a, b, c} = parseProof(proof);
+    const { a, b, c } = parseProof(proof);
     console.log(await getRoot(contract));
-    let inputTest = [
+    const inputTest = [
         //await getRoot(contract),
         mimcJS.F.toString(root),
         mimcJS.F.toString(nullifierHash),
         Amount.toString(),
     ]
+
+    return [a, b, c, inputTest]
+}
+
+const runTest = async (signer, contract, mimcJS, path2RootPos) => {
+    // secret
+    const secret = "011"
+    const cmtIdx = Bits2Num(8, path2RootPos)
+    console.log("cmtIdx", cmtIdx);
+    const nullifierHash = mimcJS.hash(cmtIdx, secret)
+    let cmt = mimcJS.hash(mimcJS.F.toString(nullifierHash), secret)
+    let leaf = mimcJS.hash(cmt, Amount.toString());
+
+    console.log("Deposit")
+    console.log("root before deposit", await getRoot(contract))
+    await deposit(contract, signer, mimcJS.F.toString(leaf))
+    console.log("root after deposit", await getRoot(contract))
+
+    let [a, b, c, inputTest] = await verify(contract, mimcJS, cmtIdx, secret)
     console.log("Withdraw", inputTest)
     await (await contract.withdraw(
-        a,b,c,
+        a, b, c,
         inputTest
+    )).wait()
+}
+
+const runForwardTest = async (signer, contract, mimcJS, path2RootPos) => {
+    // secret
+    const secret = "011"
+    const cmtIdx = Bits2Num(8, path2RootPos)
+    console.log("cmtIdx", cmtIdx);
+    const nullifierHash = mimcJS.hash(cmtIdx, secret)
+    let cmt = mimcJS.hash(mimcJS.F.toString(nullifierHash), secret)
+    let leaf = mimcJS.hash(cmt, Amount.toString());
+
+    console.log("Deposit")
+    console.log("root before deposit", await getRoot(contract))
+    await deposit(contract, signer, mimcJS.F.toString(leaf))
+    console.log("root after deposit", await getRoot(contract))
+
+    let [a, b, c, inputTest] = await verify(contract, mimcJS, cmtIdx, secret)
+    // structure new commitment 
+    let newCmtIdx = cmtIdx + 1;
+    const newNullifierHash = mimcJS.hash(newCmtIdx, secret)
+    let newCmt = mimcJS.hash(mimcJS.F.toString(newNullifierHash), secret)
+    let newLeaf = mimcJS.hash(newCmt, Amount.toString());
+    let commitment = mimcJS.F.toString(newLeaf)
+
+    console.log("Forward", inputTest)
+    await (await contract.forward(
+        a, b, c,
+        inputTest,
+        commitment
     )).wait()
 
-    /* TODO: expcetion raised, catch it
+    // withdraw verify
+    let [a2, b2, c2, inputTest2] = await verify(contract, mimcJS, newCmtIdx, secret)
+    console.log("Withdraw", inputTest)
     await (await contract.withdraw(
-        a,b,c,
-        inputTest
+        a2, b2, c2,
+        inputTest2
     )).wait()
-    */
 }
 
 describe("Mixer test suite", () => {
@@ -214,7 +252,7 @@ describe("Mixer test suite", () => {
     let signer
     before(async () => {
         const [signer] = await ethers.getSigners();
-        console.log("siger", signer.address);
+        console.log("signer", signer.address);
         mimcJS = await cls.buildMimc7();
         let abi = cls.mimc7Contract.abi
         let createCode = cls.mimc7Contract.createCode
@@ -222,7 +260,6 @@ describe("Mixer test suite", () => {
             abi, createCode(SEED, 91), signer
         )
         mimcContract = await f.deploy()
-        console.log("1111111")
         await mimcContract.deployed()
 
         console.log("mimc", mimcContract.address)
@@ -259,5 +296,11 @@ describe("Mixer test suite", () => {
         // should failed
         //path2RootPos = [0, 0, 1, 0, 0, 0, 0, 0]
         //await runTest(signer, contract, mimcJS, path2RootPos)
+    })
+
+    it("Test Mixer Forward", async () => {
+        // secret
+        let path2RootPos = [1, 1, 0, 0, 0, 0, 0, 0]
+        await runForwardTest(signer, contract, mimcJS, path2RootPos)
     })
 })

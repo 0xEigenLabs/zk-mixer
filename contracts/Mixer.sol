@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "./MerkleTree.sol";
 import "./verifier.sol";
-import "hardhat/console.sol";
 
 contract Mixer is MerkleTree ,Verifier {
     mapping (uint256 => bool) public roots;
@@ -44,7 +43,6 @@ contract Mixer is MerkleTree ,Verifier {
         require(!nullifierHashes[_nullifierHash], "The note has been already spent");
         require(isKnownRoot(_root), "Cannot find your merkle root"); // Make sure to use a recent one
         require(verifyProof(a, b, c, input), "Invalid withdraw proof");
-        console.log("1111111111111111111111111");
 
         nullifierHashes[_nullifierHash] = true;
         payable(msg.sender).transfer(_amount);

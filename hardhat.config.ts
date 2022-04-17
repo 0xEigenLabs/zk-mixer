@@ -26,27 +26,6 @@ module.exports = {
   mocha: {
     timeout: 10000000,
   },
-  //defaultNetwork: "ropsten",
-  networks: {
-    ropsten: {
-      url: "https://ropsten.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: [process.env.DEVNET_PRIVKEY],
-      gas: 2100000,
-      gasPrice: 3000000000
-    },
-    metis: {
-      url: "https://stardust.metis.io/?owner=588",
-      accounts: [process.env.DEVNET_PRIVKEY]
-    },
-    tbsc: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      accounts: [process.env.DEVNET_PRIVKEY]
-    },
-    tpolygon: {
-      url: "https://rpc-mumbai.maticvigil.com/",
-      accounts: [process.env.DEVNET_PRIVKEY]
-    }
-  },
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
@@ -63,4 +42,3 @@ module.exports = {
     onlyCalledMethods: false
   }
 }
-
