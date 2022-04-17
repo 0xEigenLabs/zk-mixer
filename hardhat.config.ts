@@ -25,6 +25,20 @@ module.exports = {
   },
   mocha: {
     timeout: 10000000,
+  },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: {
+      ropsten: '8HHE3RBH3MZ29E9I9XYP8VP6D9SQIINUIU'
+    }
+  },
+  gasReporter: {
+    currency: 'USD',
+    gasPrice: 20,
+    token: 'ETH',
+    gasPriceApi: 'https://api.etherscan.io/api?module=proxy&action=eth_gasPrice',
+    coinmarketcap: 'f6673cc5-a673-4e07-8461-f7281a5de7d7',
+    onlyCalledMethods: false
   }
 }
-
