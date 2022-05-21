@@ -161,7 +161,6 @@ async function verify(contract, mimcJS, cmtIdx, secret) {
 
     let wasm = path.join(__dirname, "../circuit/mixer_js", "mixer.wasm");
     let zkey = path.join(__dirname, "../circuit/mixer_js", "circuit_final.zkey");
-    let vkeypath = path.join(__dirname, "../circuit/mixer_js", "verification_key.json");
     const wc = require("../circuit/mixer_js/witness_calculator");
     const buffer = fs.readFileSync(wasm);
     const witnessCalculator = await wc(buffer);
