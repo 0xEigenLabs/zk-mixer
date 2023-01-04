@@ -33,6 +33,12 @@ jobs:
           key: ${{runner.OS}}-npm-caches-${{ hashFiles('package-lock.json') }}
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
+      - name: Install circom
+        uses: supplypike/setup-bin@v3
+        with:
+          uri: 'https://github.com/iden3/circom/releases/latest/download/circom-linux-amd64'
+          name: 'circom'
+          version: '2.1.2'
       - name: Compile contract
         run: npx hardhat compile
       - name: Start hardhat node
