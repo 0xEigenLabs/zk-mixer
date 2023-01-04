@@ -283,7 +283,7 @@ describe("Mixer test suite", () => {
     let signer
     let circuit
     before(async () => {
-        circuit = await test.genMain(path.join(__dirname, "..", "circuit", "main.circom"), "Withdraw", "root, nullifierHash, amount", [8]);
+        circuit = await test.genMain(path.join(__dirname, "..", "circuit", "mixer.circom"), "Withdraw", "root, nullifierHash, amount", [8]);
         await circuit.loadSymbols();
 
         const [signer] = await ethers.getSigners();
