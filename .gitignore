@@ -5,6 +5,7 @@ cache
 artifacts
 typechain
 circuit/mixer_js
+dist
 
 node_modules
 .env

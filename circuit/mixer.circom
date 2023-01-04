@@ -45,5 +45,3 @@ template Withdraw(k){
 
     nullifierHash === nullifier.out;
 }
-
-component main {public [root, nullifierHash, amount]} = Withdraw(8);
