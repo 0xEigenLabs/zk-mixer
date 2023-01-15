@@ -16,7 +16,7 @@ A coin mixer implementation based on ZKP for privacy-preserving DeFi and DAO. NO
 #### Compile circuits
 
 ```
-$ cd circuit && ./run.sh mixer
+$ cd circuit && ./run.sh main
 ```
 Wait until you are asked to type in the secret phase, twice!!
 
@@ -78,7 +78,7 @@ merkle_root[v].k<== merkle_root[v-1].out - paths2_root_pos[v]* (merkle_root[v-1]
 >* public.json: includes nullifierHash and root.
 >* cmt.json: the parameter of deposit
 
-* `./run.sh mixer`
+* `./run.sh main`
 
 Here we use `PlonK` and curve bn128 to generate verification key and proof key.  More details are presented in reference 1.  One point should be mentioned is [powersoftau](https://eprint.iacr.org/2017/1050), which adopts MPC to generate verifiable Random Beacon as CRS,  to secure their secret randomness throughout the duration of the protocol.
 

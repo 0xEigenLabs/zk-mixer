@@ -8,7 +8,7 @@ circom ${circuit_name}.circom --r1cs --wasm --sym
 
 mv ${circuit_name}.r1cs ${circuit_name}.sym  $base_dir
 cd $base_dir
-node ../../scripts/generate_${circuit_name}.js
+node ../../scripts/generate_mixer.js
 
 #Prapare phase 1
 node generate_witness.js ${circuit_name}.wasm input.json witness.wtns
