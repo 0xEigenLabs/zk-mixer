@@ -4,7 +4,7 @@ node_modules
 cache
 artifacts
 typechain
-circuit/mixer_js
+circuit/main_js
 dist
 
 node_modules
