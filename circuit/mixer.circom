@@ -1,6 +1,6 @@
 pragma circom 2.0.0;
 include "./get_merkle_root.circom";
-include "../node_modules/circomlib/circuits/mimc.circom";
+include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 
 template Withdraw(k){
@@ -15,14 +15,14 @@ template Withdraw(k){
     signal input paths2_root_pos[k];
 
     // construct cmt
-    component cmt = MiMC7(91);
-    cmt.x_in <== nullifierHash;
-    cmt.k <== secret;
+    component cmt = Poseidon(2);
+    cmt.inputs[0] <== nullifierHash;
+    cmt.inputs[1] <== secret;
 
     // root constrain
-    component leaf = MiMC7(91);
-    leaf.x_in <== cmt.out;
-    leaf.k <== amount;
+    component leaf = Poseidon(2);
+    leaf.inputs[0] <== cmt.out;
+    leaf.inputs[1] <== amount;
 
     component computed_root = GetMerkleRoot(k);
     computed_root.leaf <== leaf.out;
@@ -39,9 +39,9 @@ template Withdraw(k){
         cmt_index.in[i] <== 1 - paths2_root_pos[i];
     }
 
-    component nullifier = MiMC7(91);
-    nullifier.x_in <== cmt_index.out;
-    nullifier.k <== secret;
+    component nullifier = Poseidon(2);
+    nullifier.inputs[0] <== cmt_index.out;
+    nullifier.inputs[1] <== secret;
 
     nullifierHash === nullifier.out;
 }

@@ -16,7 +16,7 @@ function Bits2Num(n, in1) {
 }
 
 async function main() {
-  let mimcjs = await cls.buildMimc7();
+  let poseidonHash = await cls.buildPoseidonReference();
   await MIMCMerkle.init();
   // calculate cmt nullifierHash
   const path2_root_pos = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -28,10 +28,10 @@ async function main() {
   //const cmt_index = parseInt(path2_root_pos.reverse().join(""), 2)
   const cmt_index = Bits2Num(LEAF_NUM, path2_root_pos2)
   //console.log("cmt index", cmt_index)
-  const nullifierHash = mimcjs.hash(cmt_index, secret)
+  const nullifierHash = poseidonHash([cmt_index, secret])
   //console.log("nullifierHash", nullifierHash)
 
-  let cmt = mimcjs.hash(nullifierHash, secret)
+  let cmt = poseidonHash([nullifierHash, secret])
 
   // generates salt to encrypt each leaf
   let merklePath = [
@@ -47,22 +47,22 @@ async function main() {
 
   const amount = "100";
   // get merkle root
-  let root = mimcjs.hash(cmt, amount);
+  let root = poseidonHash([cmt, amount]);
 
   //let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmt_index, merklePath);
 
   for (var i = 0; i < 8; i ++) {
     if (path2_root_pos[i] == 1) {
-      root = mimcjs.hash(root, merklePath[i])
+      root = poseidonHash([root, merklePath[i]])
     } else {
-      root = mimcjs.hash(merklePath[i], root)
+      root = poseidonHash([merklePath[i], root])
     }
   }
 
   const inputs = {
-    "root": mimcjs.F.toString(root),
+    "root": poseidonHash.F.toString(root),
     "amount": amount, // unit: wei
-    "nullifierHash": mimcjs.F.toString(nullifierHash),
+    "nullifierHash": poseidonHash.F.toString(nullifierHash),
     "secret": secret,
     "paths2_root": merklePath,
     "paths2_root_pos": path2_root_pos
