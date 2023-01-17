@@ -2,8 +2,8 @@
 pragma solidity >0.5.16;
 import "hardhat/console.sol";
 
-abstract contract IMimc {
-    function MiMCpe7(uint256 in_x,uint256 in_k) virtual public returns(uint256 out_x);
+abstract contract IPoseidon {
+    function poseidon(uint256[2] memory) virtual public returns(uint256 out);
 }
 
 contract MerkleTree {
@@ -17,15 +17,15 @@ contract MerkleTree {
 
     Mtree public MT;
 
-    IMimc mimc;
+    IPoseidon poseidon;
 
     event LeafAdded(uint256 index);
-    event TestMimc(uint256);
+    event TestPoseidon(uint256);
     //event RootEx(uint256);
     event MerkleProof(uint256[8] , uint256[8] );
 
-    constructor(address _mimc) public {
-        mimc = IMimc(_mimc);
+    constructor(address _poseidon) public {
+        poseidon = IPoseidon(_poseidon);
     }
 
     // Merkletree.append(com), insert one by one
@@ -58,15 +58,15 @@ contract MerkleTree {
         return(merkleProof, address_bits);
     }
 
-    function getMimc(uint256 input, uint256 sk) public returns ( uint256) { 
-        emit TestMimc(mimc.MiMCpe7(input , sk));
-        return mimc.MiMCpe7(input , sk); 
+    function getPoseidon(uint256 input, uint256 sk) public returns ( uint256) {
+        emit TestPoseidon(poseidon.poseidon([input , sk]));
+        return poseidon.poseidon([input , sk]); 
     }
 
     function getUniqueLeaf(uint256 leaf, uint256 depth) public returns (uint256) {
         if (leaf == 0) {
             for (uint256 i=0;i<depth;i++) {
-                leaf = mimc.MiMCpe7(leaf, leaf);
+                leaf = poseidon.poseidon([leaf, leaf]);
             }
         }
         return (leaf);
@@ -84,7 +84,7 @@ contract MerkleTree {
             leaf2 =  MT.leaves2[i][index];
             }
             index = uint256(index/2);
-            MT.leaves2[i+1][index] = mimc.MiMCpe7(leaf1, leaf2);
+            MT.leaves2[i+1][index] = poseidon.poseidon([leaf1, leaf2]);
         }
         return MT.leaves2[tree_depth][0];
     }
@@ -104,10 +104,10 @@ contract MerkleTree {
        for (uint256 i=0 ; i < tree_depth; i++) {
        if (index%2 == 0) {
        leaf = getUniqueLeaf(MT.leaves2[i][index + 1],i);
-       root = mimc.MiMCpe7(leaf, root);
+       root = mimc.poseidon(leaf, root);
        } else {
        leaf = getUniqueLeaf(MT.leaves2[i][index - 1],i);
-       root = mimc.MiMCpe7(root, leaf);
+       root = mimc.poseidon(root, leaf);
        }
        index = uint256(index/2);
        }

@@ -11,7 +11,6 @@ const { stringifyBigInts, unstringifyBigInts } = utils;
 import * as MIMCMerkle from "../lib/MiMCMerkle";
 import test = require("../src/test.js");
 import util = require("../src/utils.js");
-
 const {
     randomBytes
 } = require('crypto');
@@ -65,6 +64,15 @@ async function getMimc(mixerInstance, input, sk) {
     let abi = ["event TestMimc(uint256)"]
     var iface = new ethers.utils.Interface(abi)
     let tx = await mixerInstance.getMimc(input, sk)
+    let receipt = await tx.wait()
+    let logs = iface.parseLog(receipt.events[0]);
+    let result = logs.args[0]
+}
+
+async function getPoseidon(mixerInstance, input, sk) {
+    let abi = ["event TestPoseidon(uint256)"]
+    var iface = new ethers.utils.Interface(abi)
+    let tx = await mixerInstance.getPoseidon(input, sk)
     let receipt = await tx.wait()
     let logs = iface.parseLog(receipt.events[0]);
     let result = logs.args[0]
@@ -125,38 +133,38 @@ const getUniqueLeaf = (mimc, leaf, depth) => {
     return leaf;
 }
 
-async function verify(contract, mimcJS, cmtIdx, secret) {
-    const nullifierHash = mimcJS.hash(cmtIdx, secret)
-    let cmt = mimcJS.hash(mimcJS.F.toString(nullifierHash), secret)
-    let leaf = mimcJS.hash(cmt, Amount.toString());
+async function verify(contract, poseidonHash, cmtIdx, secret) {
+    const nullifierHash = poseidonHash([cmtIdx, secret])
+    let cmt = poseidonHash([poseidonHash.F.toString(nullifierHash), secret])
+    let leaf = poseidonHash([cmt, Amount.toString()]);
 
     let [merklePath, path2RootPos2] = await getMerkleProof(contract, cmtIdx)
     console.log("Path", merklePath, path2RootPos2)
     /* TODO 
        let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmtIdx, merklePath);
        for (let a of root) {
-       console.log("Circuit root", mimcJS.F.toString(a))
+       console.log("Circuit root", poseidonHash.F.toString(a))
        }
-       let rrr = mimcJS.F.toString(root[root.length - 1])
+       let rrr = poseidonHash.F.toString(root[root.length - 1])
        console.log("Roots", rrr, await getRoot(contract));
      */
     let root = leaf;
     for (var i = 0; i < 8; i++) {
         if (path2RootPos2[i] == 1) {
-            root = mimcJS.hash(root, merklePath[i])
+            root = poseidonHash([root, merklePath[i]])
         } else {
-            root = mimcJS.hash(merklePath[i], root)
+            root = poseidonHash([merklePath[i], root])
         }
-        console.log("Circuit", mimcJS.F.toString(root), merklePath[i])
+        console.log("Circuit", poseidonHash.F.toString(root), merklePath[i])
     }
-    //console.log("shit", mimcJS.F.toString(root), await getRootEx(contract, mimcJS.F.toString(leaf), cmtIdx));
-    expect(mimcJS.F.toString(root)).to.eq(await getRoot(contract));
-    console.log("YES!!!!!!!!!", mimcJS.F.toString(root), root, await getRoot(contract), cmtIdx);
+    //console.log("shit", poseidonHash.F.toString(root), await getRootEx(contract, poseidonHash.F.toString(leaf), cmtIdx));
+    expect(poseidonHash.F.toString(root)).to.eq(await getRoot(contract));
+    console.log("YES!!!!!!!!!", poseidonHash.F.toString(root), root, await getRoot(contract), cmtIdx);
 
     let input = {
-        "root": mimcJS.F.toString(root),
+        "root": poseidonHash.F.toString(root),
         "amount": Amount.toString(),
-        "nullifierHash": mimcJS.F.toString(nullifierHash),
+        "nullifierHash": poseidonHash.F.toString(nullifierHash),
         "secret": secret,
         "paths2_root": merklePath,
         "paths2_root_pos": path2RootPos2
@@ -179,15 +187,15 @@ async function verify(contract, mimcJS, cmtIdx, secret) {
     console.log(await getRoot(contract));
     const inputTest = [
         //await getRoot(contract),
-        mimcJS.F.toString(root),
-        mimcJS.F.toString(nullifierHash),
+        poseidonHash.F.toString(root),
+        poseidonHash.F.toString(nullifierHash),
         Amount.toString(),
     ]
 
     return [a, b, c, inputTest]
 }
 
-const runTest = async (circuit, mimcJS, path2RootPos, path2RootPos2) => {
+const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
     // secret
     const secret = "0";
     const LEAF_NUM = 8;
@@ -196,10 +204,10 @@ const runTest = async (circuit, mimcJS, path2RootPos, path2RootPos2) => {
     //const cmt_index = parseInt(path2_root_pos.reverse().join(""), 2)
     const cmt_index = Bits2Num(LEAF_NUM, path2RootPos2)
     //console.log("cmt index", cmt_index)
-    const nullifierHash = mimcJS.hash(cmt_index, secret)
+    const nullifierHash = poseidonHash([cmt_index, secret])
     //console.log("nullifierHash", nullifierHash)
   
-    let cmt = mimcJS.hash(nullifierHash, secret)
+    let cmt = poseidonHash([nullifierHash, secret])
   
     // generates salt to encrypt each leaf
     let merklePath = [
@@ -214,51 +222,51 @@ const runTest = async (circuit, mimcJS, path2RootPos, path2RootPos2) => {
     ]
     const amount = "100";
     // get merkle root
-    let root = mimcJS.hash(cmt, amount);
+    let root = poseidonHash([cmt, amount]);
   
     //let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmt_index, merklePath);
   
     for (var i = 0; i < 8; i ++) {
       if (path2RootPos[i] == 1) {
-        root = mimcJS.hash(root, merklePath[i])
+        root = poseidonHash([root, merklePath[i]])
       } else {
-        root = mimcJS.hash(merklePath[i], root)
+        root = poseidonHash([merklePath[i], root])
       }
     }
     
     const circuitInputs = {
-      "root": mimcJS.F.toString(root),
+      "root": poseidonHash.F.toString(root),
       "amount": amount, // unit: wei
-      "nullifierHash": mimcJS.F.toString(nullifierHash),
+      "nullifierHash": poseidonHash.F.toString(nullifierHash),
       "secret": secret,
       "paths2_root": merklePath,
       "paths2_root_pos": path2RootPos
     }
-  
+    console.log("circuitInputs:",circuitInputs)
     await util.executeCircuit(circuit, circuitInputs)
   }
 
-const runForwardTest = async (signer, contract, mimcJS, path2RootPos) => {
+const runForwardTest = async (signer, contract, poseidonHash, path2RootPos) => {
     // secret
     const secret = "011"
     const cmtIdx = Bits2Num(8, path2RootPos)
     console.log("cmtIdx", cmtIdx);
-    const nullifierHash = mimcJS.hash(cmtIdx, secret)
-    let cmt = mimcJS.hash(mimcJS.F.toString(nullifierHash), secret)
-    let leaf = mimcJS.hash(cmt, Amount.toString());
+    const nullifierHash = poseidonHash([cmtIdx, secret])
+    let cmt = poseidonHash([poseidonHash.F.toString(nullifierHash), secret])
+    let leaf = poseidonHash([cmt, Amount.toString()]);
 
     console.log("Deposit")
     console.log("root before deposit", await getRoot(contract))
-    await deposit(contract, signer, mimcJS.F.toString(leaf))
+    await deposit(contract, signer, poseidonHash.F.toString(leaf))
     console.log("root after deposit", await getRoot(contract))
 
-    let [a, b, c, inputTest] = await verify(contract, mimcJS, cmtIdx, secret)
+    let [a, b, c, inputTest] = await verify(contract, poseidonHash, cmtIdx, secret)
     // structure new commitment 
     let newCmtIdx = cmtIdx + 1;
-    const newNullifierHash = mimcJS.hash(newCmtIdx, secret)
-    let newCmt = mimcJS.hash(mimcJS.F.toString(newNullifierHash), secret)
-    let newLeaf = mimcJS.hash(newCmt, Amount.toString());
-    let commitment = mimcJS.F.toString(newLeaf)
+    const newNullifierHash = poseidonHash([newCmtIdx, secret])
+    let newCmt = poseidonHash([poseidonHash.F.toString(newNullifierHash), secret])
+    let newLeaf = poseidonHash([newCmt, Amount.toString()]);
+    let commitment = poseidonHash.F.toString(newLeaf)
 
     console.log("Forward", inputTest)
     await (await contract.forward(
@@ -268,7 +276,7 @@ const runForwardTest = async (signer, contract, mimcJS, path2RootPos) => {
     )).wait()
 
     // withdraw verify
-    let [a2, b2, c2, inputTest2] = await verify(contract, mimcJS, newCmtIdx, secret)
+    let [a2, b2, c2, inputTest2] = await verify(contract, poseidonHash, newCmtIdx, secret)
     console.log("Withdraw", inputTest)
     await (await contract.withdraw(
         a2, b2, c2,
@@ -278,8 +286,8 @@ const runForwardTest = async (signer, contract, mimcJS, path2RootPos) => {
 
 describe("Mixer test suite", () => {
     let contract
-    let mimcJS
-    let mimcContract
+    let poseidonHash
+    let poseidonContract
     let signer
     let circuit
     before(async () => {
@@ -288,52 +296,50 @@ describe("Mixer test suite", () => {
 
         const [signer] = await ethers.getSigners();
         console.log("signer", signer.address);
-        mimcJS = await cls.buildMimc7();
-        let abi = cls.mimc7Contract.abi
-        let createCode = cls.mimc7Contract.createCode
-        let f = new ContractFactory(
-            abi, createCode(SEED, 91), signer
-        )
-        mimcContract = await f.deploy()
-        await mimcContract.deployed()
+        poseidonHash = await cls.buildPoseidonReference();
 
-        console.log("mimc", mimcContract.address)
+        const C6 = new ethers.ContractFactory(
+            cls.poseidonContract.generateABI(2),
+            cls.poseidonContract.createCode(2),
+            signer
+          );
+        poseidonContract = await C6.deploy();
+        console.log("poseidonContract address:", poseidonContract.address)
         let F = await ethers.getContractFactory("Mixer");
-        contract = await F.deploy(mimcContract.address);
+        contract = await F.deploy(poseidonContract.address);
         await contract.deployed()
-
+        console.log("contract address:", contract.address)
         await MIMCMerkle.init();
     })
 
-    it("Test MIMC", async () => {
-        const res = await mimcContract["MiMCpe7"](1, 2);
-        const res2 = mimcJS.hash(1, 2);
-        assert.equal(res.toString(), mimcJS.F.toString(res2));
+    it("Test Poseidon", async () => {
+        const res = await poseidonContract["poseidon(uint256[2])"]([1, 2]);
+        const res2 = poseidonHash([1, 2]);
+        assert.equal(res.toString(), poseidonHash.F.toString(res2));
 
         let r = "17476463353520328933908815096303937517517835673952302892565831818490112348179";
-        console.log(mimcJS.F.toString(mimcJS.hash(r, r)))
-        console.log(mimcJS.F.toString(await mimcContract["MiMCpe7"](r, r)))
-
-        await getMimc(contract, r, r)
+        console.log(poseidonHash.F.toString(poseidonHash([r, r])))
+        console.log(poseidonHash.F.toString(await poseidonContract["poseidon(uint256[2])"]([r, r])))
+        await getPoseidon(contract, r, r)
     })
 
     it("Test Mixer Withdraw", async () => {
         let path2RootPos = [0, 0, 0, 0, 0, 0, 0, 0]
         let path2RootPos2 = [1, 1, 1, 1, 1, 1, 1, 1]
-        await runTest(circuit, mimcJS, path2RootPos, path2RootPos2)
+        await runTest(circuit, poseidonHash, path2RootPos, path2RootPos2)
     
         path2RootPos = [1, 0, 0, 0, 0, 0, 0, 0]
         path2RootPos2 = [0, 1, 1, 1, 1, 1, 1, 1]
-        await runTest(circuit, mimcJS, path2RootPos, path2RootPos2)
+        await runTest(circuit, poseidonHash, path2RootPos, path2RootPos2)
     
         path2RootPos = [0, 1, 0, 0, 0, 0, 0, 0]
         path2RootPos2 = [1, 0, 1, 1, 1, 1, 1, 1]
-        await runTest(circuit, mimcJS, path2RootPos, path2RootPos2)
+        await runTest(circuit, poseidonHash, path2RootPos, path2RootPos2)
       });
 
     it("Test Mixer Forward", async () => {
         // secret
         let path2RootPos = [0, 0, 0, 0, 0, 0, 0, 0]
-        await runForwardTest(signer, contract, mimcJS, path2RootPos)
+        await runForwardTest(signer, contract, poseidonHash, path2RootPos)
     })
 })
