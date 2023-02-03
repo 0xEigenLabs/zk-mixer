@@ -11,16 +11,18 @@ A coin mixer implementation based on ZKP for privacy-preserving DeFi and DAO. NO
 -  Contracts
 	- Mixer
 	- Merkle
-
-
+### Build
+requirement: [circom](https://docs.circom.io/getting-started/installation/)
+version>=2.1.2
+```
+$ npm run build 
+```
 #### Compile circuits
 
 ```
 $ cd circuit && ./run.sh main
 ```
-Wait until you are asked to type in the secret phase, twice!!
-
-Then run the UT by `yarn test`
+Run the UT by `yarn test`
 
 ### How it work
 
