@@ -171,7 +171,7 @@ async function verify(contract, poseidonHash, cmtIdx, secret) {
     }
 
     let wasm = path.join(__dirname, "../circuit/main_js", "main.wasm");
-    let zkey = path.join(__dirname, "../circuit/main_js", "circuit_final.zkey");
+    let zkey = path.join(__dirname, "../circuit", "circuit_final.zkey");
     const wc = require("../circuit/main_js/witness_calculator");
     const buffer = fs.readFileSync(wasm);
     const witnessCalculator = await wc(buffer);

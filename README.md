@@ -22,7 +22,7 @@ $ npm run build
 ```
 $ cd circuit && ./run.sh main
 ```
-Run the UT by `yarn test`
+Run the UT by `npm run test`
 
 ### How it work
 
@@ -39,7 +39,7 @@ The low multiplicative complexity of MiMC over prime fields makes it suitable fo
 applications such as ZCash.
 More details are [here](https://byt3bit.github.io/primesym/mimc/).
 
-* `yarn generate`
+* `npm run generate`
 This operation produces 4 files in circuit directory:
 >* input.json :  secret for mixer to generate witness, a sample is as below: 
 ```
@@ -88,7 +88,7 @@ Here we use `PlonK` and curve bn128 to generate verification key and proof key. 
 
 Start the local node.
 
-* `yarn test`
+* `npm run test`
 
 Run the test.
 
