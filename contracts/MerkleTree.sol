@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >0.5.16;
-import "hardhat/console.sol";
 
 abstract contract IPoseidon {
     function poseidon(uint256[2] memory) virtual public returns(uint256 out);

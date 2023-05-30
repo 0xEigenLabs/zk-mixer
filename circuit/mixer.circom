@@ -3,26 +3,20 @@ include "./get_merkle_root.circom";
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 
-template Withdraw(k){
+template Verify(k){
     // public input
     signal input root;
     signal input nullifierHash;
-    signal input amount;
 
     // private input
     signal input secret;
     signal input paths2_root[k];
     signal input paths2_root_pos[k];
 
-    // construct cmt
-    component cmt = Poseidon(2);
-    cmt.inputs[0] <== nullifierHash;
-    cmt.inputs[1] <== secret;
-
     // root constrain
     component leaf = Poseidon(2);
-    leaf.inputs[0] <== cmt.out;
-    leaf.inputs[1] <== amount;
+    leaf.inputs[0] <== nullifierHash;
+    leaf.inputs[1] <== secret;
 
     component computed_root = GetMerkleRoot(k);
     computed_root.leaf <== leaf.out;

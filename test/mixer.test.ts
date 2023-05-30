@@ -1,22 +1,13 @@
-const { waffle, ethers } = require("hardhat");
-import { ContractFactory, BigNumberish } from "ethers";
+const { ethers } = require("hardhat");
+import { BigNumberish } from "ethers";
 import { assert, expect } from "chai";
-const BN = require("bn.js");
 const fs = require("fs");
 const path = require("path");
-const F1Field = require("ffjavascript").F1Field;
 const snarkjs = require("snarkjs");
-import { utils } from "ffjavascript";
-const { stringifyBigInts, unstringifyBigInts } = utils;
-import * as MIMCMerkle from "../lib/MiMCMerkle";
 import test = require("../src/test.js");
 import util = require("../src/utils.js");
-const {
-    randomBytes
-} = require('crypto');
 
 const cls = require("circomlibjs");
-const SEED = "mimc";
 var Amount = ethers.utils.parseEther('0.02');
 console.log(Amount.toString())
 
@@ -49,24 +40,10 @@ function parseProof(proof: any): Proof {
 }
 
 
-// deposit
-// 0,1,2,3
-async function deposit(mixerInstance, signer, cmt) {
-    var tx = await mixerInstance.deposit(cmt, {
-        from: signer,
-        value: Amount
-    });
+async function addCommitment(mixerInstance, cmt) {
+    var tx = await mixerInstance.addCommitment(cmt);
     await tx.wait()
-    console.log("Deposit done")
-}
-
-async function getMimc(mixerInstance, input, sk) {
-    let abi = ["event TestMimc(uint256)"]
-    var iface = new ethers.utils.Interface(abi)
-    let tx = await mixerInstance.getMimc(input, sk)
-    let receipt = await tx.wait()
-    let logs = iface.parseLog(receipt.events[0]);
-    let result = logs.args[0]
+    console.log("Add commitment done")
 }
 
 async function getPoseidon(mixerInstance, input, sk) {
@@ -78,7 +55,6 @@ async function getPoseidon(mixerInstance, input, sk) {
     let result = logs.args[0]
 }
 
-// getMerkleProof
 async function getMerkleProof(mixerInstance, leaf_index) {
     let res = []
     let addressBits = []
@@ -109,46 +85,12 @@ async function getRoot(mixerInstance) {
     return root.toString()
 }
 
-/*
-async function getRootEx(mixerInstance, leaf, cmtIdx) {
-  let tx =  await mixerInstance.getRootEx(leaf, cmtIdx);
-  let receipt = await tx.wait()
-
-  let abi = [ "event RootEx(uint256)" ]
-  var iface = new ethers.utils.Interface(abi);
-  let logs = iface.parseLog(receipt.events[0]); 
-  let root = logs.args[0]
-
-  console.log("root:", root.toString())
-  return root.toString()
-}
-*/
-
-const getUniqueLeaf = (mimc, leaf, depth) => {
-    if (leaf == 0) {
-        for (let i = 0; i < depth; i++) {
-            leaf = mimc.hash(leaf, leaf);
-        }
-    }
-    return leaf;
-}
-
-async function verify(contract, poseidonHash, cmtIdx, secret) {
+async function generateProof(contract, poseidonHash, cmtIdx, secret) {
     const nullifierHash = poseidonHash([cmtIdx, secret])
     let cmt = poseidonHash([poseidonHash.F.toString(nullifierHash), secret])
-    let leaf = poseidonHash([cmt, Amount.toString()]);
-
     let [merklePath, path2RootPos2] = await getMerkleProof(contract, cmtIdx)
     console.log("Path", merklePath, path2RootPos2)
-    /* TODO 
-       let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmtIdx, merklePath);
-       for (let a of root) {
-       console.log("Circuit root", poseidonHash.F.toString(a))
-       }
-       let rrr = poseidonHash.F.toString(root[root.length - 1])
-       console.log("Roots", rrr, await getRoot(contract));
-     */
-    let root = leaf;
+    let root = cmt;
     for (var i = 0; i < 8; i++) {
         if (path2RootPos2[i] == 1) {
             root = poseidonHash([root, merklePath[i]])
@@ -157,13 +99,11 @@ async function verify(contract, poseidonHash, cmtIdx, secret) {
         }
         console.log("Circuit", poseidonHash.F.toString(root), merklePath[i])
     }
-    //console.log("shit", poseidonHash.F.toString(root), await getRootEx(contract, poseidonHash.F.toString(leaf), cmtIdx));
     expect(poseidonHash.F.toString(root)).to.eq(await getRoot(contract));
     console.log("YES!!!!!!!!!", poseidonHash.F.toString(root), root, await getRoot(contract), cmtIdx);
 
     let input = {
         "root": poseidonHash.F.toString(root),
-        "amount": Amount.toString(),
         "nullifierHash": poseidonHash.F.toString(nullifierHash),
         "secret": secret,
         "paths2_root": merklePath,
@@ -181,34 +121,21 @@ async function verify(contract, poseidonHash, cmtIdx, secret) {
         0
     );
     const { proof, publicSignals } = await snarkjs.groth16.prove(zkey, witnessBuffer);
-    //const res = await snarkjs.groth16.exportSolidityCallData(proof, "");
-    //let result = res.substring(0, res.length - 3);
     const { a, b, c } = parseProof(proof);
     console.log(await getRoot(contract));
     const inputTest = [
-        //await getRoot(contract),
         poseidonHash.F.toString(root),
-        poseidonHash.F.toString(nullifierHash),
-        Amount.toString(),
+        poseidonHash.F.toString(nullifierHash)
     ]
-
     return [a, b, c, inputTest]
 }
 
 const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
-    // secret
     const secret = "0";
     const LEAF_NUM = 8;
-    //console.log(path2_root_pos.join(""))
-    // 255 = 11111111b
-    //const cmt_index = parseInt(path2_root_pos.reverse().join(""), 2)
     const cmt_index = Bits2Num(LEAF_NUM, path2RootPos2)
-    //console.log("cmt index", cmt_index)
-    const nullifierHash = poseidonHash([cmt_index, secret])
-    //console.log("nullifierHash", nullifierHash)
-  
+    const nullifierHash = poseidonHash([cmt_index, secret]) 
     let cmt = poseidonHash([nullifierHash, secret])
-  
     // generates salt to encrypt each leaf
     let merklePath = [
       '0',
@@ -220,12 +147,9 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
       '5253775198292439148470029927208469781432760606734473405438165226265735347735',
       '9586203148669237657308746417333646936338855598595657703565568663564319347700'
     ]
-    const amount = "100";
     // get merkle root
-    let root = poseidonHash([cmt, amount]);
-  
-    //let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmt_index, merklePath);
-  
+    let root = cmt;
+
     for (var i = 0; i < 8; i ++) {
       if (path2RootPos[i] == 1) {
         root = poseidonHash([root, merklePath[i]])
@@ -233,10 +157,9 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
         root = poseidonHash([merklePath[i], root])
       }
     }
-    
+
     const circuitInputs = {
       "root": poseidonHash.F.toString(root),
-      "amount": amount, // unit: wei
       "nullifierHash": poseidonHash.F.toString(nullifierHash),
       "secret": secret,
       "paths2_root": merklePath,
@@ -246,41 +169,24 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
     await util.executeCircuit(circuit, circuitInputs)
   }
 
-const runForwardTest = async (signer, contract, poseidonHash, path2RootPos) => {
-    // secret
+const runForwardTest = async (contract, poseidonHash, path2RootPos) => {
     const secret = "011"
     const cmtIdx = Bits2Num(8, path2RootPos)
     console.log("cmtIdx", cmtIdx);
     const nullifierHash = poseidonHash([cmtIdx, secret])
     let cmt = poseidonHash([poseidonHash.F.toString(nullifierHash), secret])
-    let leaf = poseidonHash([cmt, Amount.toString()]);
 
-    console.log("Deposit")
-    console.log("root before deposit", await getRoot(contract))
-    await deposit(contract, signer, poseidonHash.F.toString(leaf))
-    console.log("root after deposit", await getRoot(contract))
+    console.log("===addCommitment===")
+    console.log("root before operation: ", await getRoot(contract))
+    await addCommitment(contract, poseidonHash.F.toString(cmt))
+    console.log("root after operation: ", await getRoot(contract))
 
-    let [a, b, c, inputTest] = await verify(contract, poseidonHash, cmtIdx, secret)
-    // structure new commitment 
-    let newCmtIdx = cmtIdx + 1;
-    const newNullifierHash = poseidonHash([newCmtIdx, secret])
-    let newCmt = poseidonHash([poseidonHash.F.toString(newNullifierHash), secret])
-    let newLeaf = poseidonHash([newCmt, Amount.toString()]);
-    let commitment = poseidonHash.F.toString(newLeaf)
+    let [a, b, c, publicInfo] = await generateProof(contract, poseidonHash, cmtIdx, secret)
 
-    console.log("Forward", inputTest)
-    await (await contract.forward(
+    console.log("===verify===", publicInfo)
+    await (await contract.verify(
         a, b, c,
-        inputTest,
-        commitment
-    )).wait()
-
-    // withdraw verify
-    let [a2, b2, c2, inputTest2] = await verify(contract, poseidonHash, newCmtIdx, secret)
-    console.log("Withdraw", inputTest)
-    await (await contract.withdraw(
-        a2, b2, c2,
-        inputTest2
+        publicInfo
     )).wait()
 }
 
@@ -288,10 +194,9 @@ describe("Mixer test suite", () => {
     let contract
     let poseidonHash
     let poseidonContract
-    let signer
     let circuit
     before(async () => {
-        circuit = await test.genMain(path.join(__dirname, "..", "circuit", "mixer.circom"), "Withdraw", "root, nullifierHash, amount", [8]);
+        circuit = await test.genMain(path.join(__dirname, "..", "circuit", "mixer.circom"), "Verify", "root, nullifierHash", [8]);
         await circuit.loadSymbols();
 
         const [signer] = await ethers.getSigners();
@@ -309,7 +214,6 @@ describe("Mixer test suite", () => {
         contract = await F.deploy(poseidonContract.address);
         await contract.deployed()
         console.log("contract address:", contract.address)
-        await MIMCMerkle.init();
     })
 
     it("Test Poseidon", async () => {
@@ -323,7 +227,7 @@ describe("Mixer test suite", () => {
         await getPoseidon(contract, r, r)
     })
 
-    it("Test Mixer Withdraw", async () => {
+    it("Test Mixer executeCircuit", async () => {
         let path2RootPos = [0, 0, 0, 0, 0, 0, 0, 0]
         let path2RootPos2 = [1, 1, 1, 1, 1, 1, 1, 1]
         await runTest(circuit, poseidonHash, path2RootPos, path2RootPos2)
@@ -338,8 +242,7 @@ describe("Mixer test suite", () => {
       });
 
     it("Test Mixer Forward", async () => {
-        // secret
         let path2RootPos = [0, 0, 0, 0, 0, 0, 0, 0]
-        await runForwardTest(signer, contract, poseidonHash, path2RootPos)
+        await runForwardTest(contract, poseidonHash, path2RootPos)
     })
 })
