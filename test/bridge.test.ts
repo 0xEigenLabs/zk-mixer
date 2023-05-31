@@ -40,25 +40,25 @@ function parseProof(proof: any): Proof {
 }
 
 
-async function addCommitment(mixerInstance, cmt) {
-    var tx = await mixerInstance.addCommitment(cmt);
+async function addCommitment(bridgeInstance, cmt) {
+    var tx = await bridgeInstance.addCommitment(cmt);
     await tx.wait()
     console.log("Add commitment done")
 }
 
-async function getPoseidon(mixerInstance, input, sk) {
+async function getPoseidon(bridgeInstance, input, sk) {
     let abi = ["event TestPoseidon(uint256)"]
     var iface = new ethers.utils.Interface(abi)
-    let tx = await mixerInstance.getPoseidon(input, sk)
+    let tx = await bridgeInstance.getPoseidon(input, sk)
     let receipt = await tx.wait()
     let logs = iface.parseLog(receipt.events[0]);
     let result = logs.args[0]
 }
 
-async function getMerkleProof(mixerInstance, leaf_index) {
+async function getMerkleProof(bridgeInstance, leaf_index) {
     let res = []
     let addressBits = []
-    let tx = await mixerInstance.getMerkleProof(leaf_index);
+    let tx = await bridgeInstance.getMerkleProof(leaf_index);
     let receipt = await tx.wait()
 
     let abi = ["event MerkleProof(uint256[8] , uint256[8] )"]
@@ -79,8 +79,8 @@ async function getMerkleProof(mixerInstance, leaf_index) {
     return [res, addressBits];
 }
 
-async function getRoot(mixerInstance) {
-    let root = await mixerInstance.getRoot();
+async function getRoot(bridgeInstance) {
+    let root = await bridgeInstance.getRoot();
     console.log("root:", root.toString())
     return root.toString()
 }
@@ -182,7 +182,7 @@ const runContractTest = async (contract, poseidonHash, path2RootPos) => {
     ))
 }
 
-describe("Mixer test suite", () => {
+describe("Bridge test suite", () => {
     let contract
     let poseidonHash
     let poseidonContract
@@ -202,7 +202,7 @@ describe("Mixer test suite", () => {
           );
         poseidonContract = await C6.deploy();
         console.log("poseidonContract address:", poseidonContract.address)
-        let F = await ethers.getContractFactory("Mixer");
+        let F = await ethers.getContractFactory("Bridge");
         contract = await F.deploy(poseidonContract.address);
         await contract.deployed()
         console.log("contract address:", contract.address)
@@ -219,7 +219,7 @@ describe("Mixer test suite", () => {
         await getPoseidon(contract, r, r)
     })
 
-    it("Test Mixer executeCircuit", async () => {
+    it("Test Bridge executeCircuit", async () => {
         let path2RootPos = [0, 0, 0, 0, 0, 0, 0, 0]
         let path2RootPos2 = [1, 1, 1, 1, 1, 1, 1, 1]
         await runTest(circuit, poseidonHash, path2RootPos, path2RootPos2)
@@ -233,7 +233,7 @@ describe("Mixer test suite", () => {
         await runTest(circuit, poseidonHash, path2RootPos, path2RootPos2)
       });
 
-    it("Test Mixer Forward", async () => {
+    it("Test Bridge Contract", async () => {
         let path2RootPos = [0, 0, 0, 0, 0, 0, 0, 0]
         await runContractTest(contract, poseidonHash, path2RootPos)
     })

@@ -1,7 +1,7 @@
 {
-  "name": "zk-mixer",
+  "name": "zk-bridge",
   "version": "0.0.1",
-  "description": "Eigen ZK Mixer",
+  "description": "Eigen ZK Bridge",
   "main": "index.js",
   "scripts": {
     "lint": "./node_modules/.bin/eslint src --ext .ts",
