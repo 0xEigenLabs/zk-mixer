@@ -188,7 +188,7 @@ describe("Mixer test suite", () => {
     let poseidonContract
     let circuit
     before(async () => {
-        circuit = await test.genMain(path.join(__dirname, "..", "circuit", "mixer.circom"), "Verify", "root", [8]);
+        circuit = await test.genMain(path.join(__dirname, "..", "circuit", "merkle_proof_verification.circom"), "Verify", "root", [8]);
         await circuit.loadSymbols();
 
         const [signer] = await ethers.getSigners();
