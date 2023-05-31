@@ -85,12 +85,11 @@ async function getRoot(mixerInstance) {
     return root.toString()
 }
 
-async function generateProof(contract, poseidonHash, cmtIdx, secret) {
-    const nullifierHash = poseidonHash([cmtIdx, secret])
-    let cmt = poseidonHash([poseidonHash.F.toString(nullifierHash), secret])
+async function generateProof(contract, poseidonHash, cmtIdx) {
+    const nullifierHash = poseidonHash([cmtIdx, cmtIdx])
     let [merklePath, path2RootPos2] = await getMerkleProof(contract, cmtIdx)
     console.log("Path", merklePath, path2RootPos2)
-    let root = cmt;
+    let root = nullifierHash;
     for (var i = 0; i < 8; i++) {
         if (path2RootPos2[i] == 1) {
             root = poseidonHash([root, merklePath[i]])
@@ -105,7 +104,6 @@ async function generateProof(contract, poseidonHash, cmtIdx, secret) {
     let input = {
         "root": poseidonHash.F.toString(root),
         "nullifierHash": poseidonHash.F.toString(nullifierHash),
-        "secret": secret,
         "paths2_root": merklePath,
         "paths2_root_pos": path2RootPos2
     }
@@ -124,18 +122,15 @@ async function generateProof(contract, poseidonHash, cmtIdx, secret) {
     const { a, b, c } = parseProof(proof);
     console.log(await getRoot(contract));
     const inputTest = [
-        poseidonHash.F.toString(root),
-        poseidonHash.F.toString(nullifierHash)
+        poseidonHash.F.toString(root)
     ]
     return [a, b, c, inputTest]
 }
 
 const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
-    const secret = "0";
     const LEAF_NUM = 8;
     const cmt_index = Bits2Num(LEAF_NUM, path2RootPos2)
-    const nullifierHash = poseidonHash([cmt_index, secret]) 
-    let cmt = poseidonHash([nullifierHash, secret])
+    const nullifierHash = poseidonHash([cmt_index, cmt_index])
     // generates salt to encrypt each leaf
     let merklePath = [
       '0',
@@ -148,7 +143,7 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
       '9586203148669237657308746417333646936338855598595657703565568663564319347700'
     ]
     // get merkle root
-    let root = cmt;
+    let root = nullifierHash;
 
     for (var i = 0; i < 8; i ++) {
       if (path2RootPos[i] == 1) {
@@ -161,7 +156,6 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
     const circuitInputs = {
       "root": poseidonHash.F.toString(root),
       "nullifierHash": poseidonHash.F.toString(nullifierHash),
-      "secret": secret,
       "paths2_root": merklePath,
       "paths2_root_pos": path2RootPos
     }
@@ -169,25 +163,23 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
     await util.executeCircuit(circuit, circuitInputs)
   }
 
-const runForwardTest = async (contract, poseidonHash, path2RootPos) => {
-    const secret = "011"
+const runContractTest = async (contract, poseidonHash, path2RootPos) => {
     const cmtIdx = Bits2Num(8, path2RootPos)
     console.log("cmtIdx", cmtIdx);
-    const nullifierHash = poseidonHash([cmtIdx, secret])
-    let cmt = poseidonHash([poseidonHash.F.toString(nullifierHash), secret])
+    const nullifierHash = poseidonHash([cmtIdx, cmtIdx])
 
     console.log("===addCommitment===")
     console.log("root before operation: ", await getRoot(contract))
-    await addCommitment(contract, poseidonHash.F.toString(cmt))
+    await addCommitment(contract, poseidonHash.F.toString(nullifierHash))
     console.log("root after operation: ", await getRoot(contract))
 
-    let [a, b, c, publicInfo] = await generateProof(contract, poseidonHash, cmtIdx, secret)
+    let [a, b, c, publicInfo] = await generateProof(contract, poseidonHash, cmtIdx)
 
     console.log("===verify===", publicInfo)
     await (await contract.verify(
         a, b, c,
         publicInfo
-    )).wait()
+    ))
 }
 
 describe("Mixer test suite", () => {
@@ -196,7 +188,7 @@ describe("Mixer test suite", () => {
     let poseidonContract
     let circuit
     before(async () => {
-        circuit = await test.genMain(path.join(__dirname, "..", "circuit", "mixer.circom"), "Verify", "root, nullifierHash", [8]);
+        circuit = await test.genMain(path.join(__dirname, "..", "circuit", "mixer.circom"), "Verify", "root", [8]);
         await circuit.loadSymbols();
 
         const [signer] = await ethers.getSigners();
@@ -243,6 +235,6 @@ describe("Mixer test suite", () => {
 
     it("Test Mixer Forward", async () => {
         let path2RootPos = [0, 0, 0, 0, 0, 0, 0, 0]
-        await runForwardTest(contract, poseidonHash, path2RootPos)
+        await runContractTest(contract, poseidonHash, path2RootPos)
     })
 })
