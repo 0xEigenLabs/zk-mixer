@@ -22,7 +22,7 @@ contract Bridge is MerkleTree ,Verifier {
         uint[2] memory a,
         uint[2][2] memory b,
         uint[2] memory c,
-        uint[1] memory input) public view returns (bool) {
+        uint[2] memory input) public view returns (bool) {
         require(isKnownRoot(input[0]), "Cannot find your merkle root"); // Make sure to use a recent one
         require(verifyProof(a, b, c, input), "Invalid proof");
         return true;

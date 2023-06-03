@@ -6,9 +6,8 @@ include "../node_modules/circomlib/circuits/bitify.circom";
 template Verify(k){
     // public input
     signal input root;
-
-    // private input
     signal input nullifierHash;
+    // private input
     signal input paths2_root[k];
     signal input paths2_root_pos[k];
 
