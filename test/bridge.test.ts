@@ -1,135 +1,13 @@
-const { ethers } = require("hardhat");
-import { BigNumberish } from "ethers";
-import { assert, expect } from "chai";
-const fs = require("fs");
+import { assert } from "chai";
+import * as utils from "../src/utils";
 const path = require("path");
-const snarkjs = require("snarkjs");
-import test = require("../src/test.js");
-import util = require("../src/utils.js");
-
+const test = require("./test");
 const cls = require("circomlibjs");
-var Amount = ethers.utils.parseEther('0.02');
-console.log(Amount.toString())
-
-interface Proof {
-    a: [BigNumberish, BigNumberish];
-    b: [[BigNumberish, BigNumberish], [BigNumberish, BigNumberish]];
-    c: [BigNumberish, BigNumberish];
-}
-
-function Bits2Num(n, in1) {
-    var lc1 = 0;
-
-    var e2 = 1;
-    for (var i = 0; i < n; i++) {
-        lc1 += Number(in1[i]) * e2;
-        e2 = e2 + e2;
-    }
-    return lc1
-}
-
-function parseProof(proof: any): Proof {
-    return {
-        a: [proof.pi_a[0], proof.pi_a[1]],
-        b: [
-            [proof.pi_b[0][1], proof.pi_b[0][0]],
-            [proof.pi_b[1][1], proof.pi_b[1][0]],
-        ],
-        c: [proof.pi_c[0], proof.pi_c[1]],
-    };
-}
-
-
-async function addCommitment(bridgeInstance, cmt) {
-    var tx = await bridgeInstance.addCommitment(cmt);
-    await tx.wait()
-    console.log("Add commitment done")
-}
-
-async function getPoseidon(bridgeInstance, input, sk) {
-    let abi = ["event TestPoseidon(uint256)"]
-    var iface = new ethers.utils.Interface(abi)
-    let tx = await bridgeInstance.getPoseidon(input, sk)
-    let receipt = await tx.wait()
-    let logs = iface.parseLog(receipt.events[0]);
-    let result = logs.args[0]
-}
-
-async function getMerkleProof(bridgeInstance, leaf_index) {
-    let res = []
-    let addressBits = []
-    let tx = await bridgeInstance.getMerkleProof(leaf_index);
-    let receipt = await tx.wait()
-
-    let abi = ["event MerkleProof(uint256[8] , uint256[8] )"]
-    var iface = new ethers.utils.Interface(abi);
-    let logs = iface.parseLog(receipt.events[0]);
-    let proof = logs.args[0]
-    let proof2 = logs.args[1]
-
-    for (let i = 0; i < proof.length; i++) {
-        let t = proof[i];
-        res.push(t.toString())
-    }
-
-    for (let i = 0; i < proof2.length; i++) {
-        let t = proof2[i];
-        addressBits.push(t.toString())
-    }
-    return [res, addressBits];
-}
-
-async function getRoot(bridgeInstance) {
-    let root = await bridgeInstance.getRoot();
-    console.log("root:", root.toString())
-    return root.toString()
-}
-
-async function generateProof(contract, poseidonHash, cmtIdx) {
-    const nullifierHash = poseidonHash([cmtIdx, cmtIdx])
-    let [merklePath, path2RootPos2] = await getMerkleProof(contract, cmtIdx)
-    console.log("Path", merklePath, path2RootPos2)
-    let root = nullifierHash;
-    for (var i = 0; i < 8; i++) {
-        if (path2RootPos2[i] == 1) {
-            root = poseidonHash([root, merklePath[i]])
-        } else {
-            root = poseidonHash([merklePath[i], root])
-        }
-        console.log("Circuit", poseidonHash.F.toString(root), merklePath[i])
-    }
-    expect(poseidonHash.F.toString(root)).to.eq(await getRoot(contract));
-    console.log("YES!!!!!!!!!", poseidonHash.F.toString(root), root, await getRoot(contract), cmtIdx);
-
-    let input = {
-        "root": poseidonHash.F.toString(root),
-        "nullifierHash": poseidonHash.F.toString(nullifierHash),
-        "paths2_root": merklePath,
-        "paths2_root_pos": path2RootPos2
-    }
-
-    let wasm = path.join(__dirname, "../circuit/main_js", "main.wasm");
-    let zkey = path.join(__dirname, "../circuit", "circuit_final.zkey");
-    const wc = require("../circuit/main_js/witness_calculator");
-    const buffer = fs.readFileSync(wasm);
-    const witnessCalculator = await wc(buffer);
-
-    const witnessBuffer = await witnessCalculator.calculateWTNSBin(
-        input,
-        0
-    );
-    const { proof, publicSignals } = await snarkjs.groth16.prove(zkey, witnessBuffer);
-    const { a, b, c } = parseProof(proof);
-    console.log(await getRoot(contract));
-    const inputTest = [
-        poseidonHash.F.toString(root)
-    ]
-    return [a, b, c, inputTest]
-}
+const hre = require("hardhat")
 
 const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
     const LEAF_NUM = 8;
-    const cmt_index = Bits2Num(LEAF_NUM, path2RootPos2)
+    const cmt_index = utils.Bits2Num(LEAF_NUM, path2RootPos2)
     const nullifierHash = poseidonHash([cmt_index, cmt_index])
     // generates salt to encrypt each leaf
     let merklePath = [
@@ -144,7 +22,7 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
     ]
     // get merkle root
     let root = nullifierHash;
-
+  
     for (var i = 0; i < 8; i ++) {
       if (path2RootPos[i] == 1) {
         root = poseidonHash([root, merklePath[i]])
@@ -152,7 +30,7 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
         root = poseidonHash([merklePath[i], root])
       }
     }
-
+  
     const circuitInputs = {
       "root": poseidonHash.F.toString(root),
       "nullifierHash": poseidonHash.F.toString(nullifierHash),
@@ -160,27 +38,27 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
       "paths2_root_pos": path2RootPos
     }
     console.log("circuitInputs:",circuitInputs)
-    await util.executeCircuit(circuit, circuitInputs)
+    await utils.executeCircuit(circuit, circuitInputs)
   }
-
-const runContractTest = async (contract, poseidonHash, path2RootPos) => {
-    const cmtIdx = Bits2Num(8, path2RootPos)
+  
+  const runContractTest = async (contract, poseidonHash, path2RootPos) => {
+    const cmtIdx = utils.Bits2Num(8, path2RootPos)
     console.log("cmtIdx", cmtIdx);
     const nullifierHash = poseidonHash([cmtIdx, cmtIdx])
-
+  
     console.log("===addCommitment===")
-    console.log("root before operation: ", await getRoot(contract))
-    await addCommitment(contract, poseidonHash.F.toString(nullifierHash))
-    console.log("root after operation: ", await getRoot(contract))
-
-    let [a, b, c, publicInfo] = await generateProof(contract, poseidonHash, cmtIdx)
-
+    console.log("root before operation: ", await utils.getRoot(contract))
+    await utils.addCommitment(contract, poseidonHash.F.toString(nullifierHash))
+    console.log("root after operation: ", await utils.getRoot(contract))
+  
+    let [a, b, c, publicInfo] = await utils.generateProof(contract, poseidonHash, cmtIdx)
+  
     console.log("===verify===", publicInfo)
     await (await contract.verify(
         a, b, c,
         publicInfo
     ))
-}
+  }
 
 describe("Bridge test suite", () => {
     let contract
@@ -190,19 +68,18 @@ describe("Bridge test suite", () => {
     before(async () => {
         circuit = await test.genMain(path.join(__dirname, "..", "circuit", "merkle_proof_verification.circom"), "Verify", "root", [8]);
         await circuit.loadSymbols();
-
-        const [signer] = await ethers.getSigners();
-        console.log("signer", signer.address);
+        const [signer] = await hre.ethers.getSigners();
+        console.log("signer", signer.getAddress());
         poseidonHash = await cls.buildPoseidonReference();
 
-        const C6 = new ethers.ContractFactory(
+        const C6 = new hre.ethers.ContractFactory(
             cls.poseidonContract.generateABI(2),
             cls.poseidonContract.createCode(2),
             signer
           );
         poseidonContract = await C6.deploy();
         console.log("poseidonContract address:", poseidonContract.address)
-        let F = await ethers.getContractFactory("Bridge");
+        let F = await hre.ethers.getContractFactory("Bridge");
         contract = await F.deploy(poseidonContract.address);
         await contract.deployed()
         console.log("contract address:", contract.address)
@@ -216,7 +93,7 @@ describe("Bridge test suite", () => {
         let r = "17476463353520328933908815096303937517517835673952302892565831818490112348179";
         console.log(poseidonHash.F.toString(poseidonHash([r, r])))
         console.log(poseidonHash.F.toString(await poseidonContract["poseidon(uint256[2])"]([r, r])))
-        await getPoseidon(contract, r, r)
+        await utils.getPoseidon(contract, r, r)
     })
 
     it("Test Bridge executeCircuit", async () => {
