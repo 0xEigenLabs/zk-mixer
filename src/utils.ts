@@ -177,10 +177,9 @@ export async function getRoot(bridgeInstance) {
   return root.toString()
 }
 
-export async function generateProof(contract, poseidonHash, cmtIdx) {
-  const nullifierHash = poseidonHash([cmtIdx, cmtIdx])
+export async function generateProof(contract, poseidonHash, cmtIdx, param) {
   let [merklePath, path2RootPos2] = await getMerkleProof(contract, cmtIdx)
-  let root = nullifierHash;
+  let root = param;
   for (var i = 0; i < 8; i++) {
       if (path2RootPos2[i] == 1) {
           root = poseidonHash([root, merklePath[i]])
@@ -193,7 +192,7 @@ export async function generateProof(contract, poseidonHash, cmtIdx) {
   // console.log("YES!!!!!!!!!", poseidonHash.F.toString(root), root, await getRoot(contract), cmtIdx);
   let input = {
       "root": poseidonHash.F.toString(root),
-      "nullifierHash": poseidonHash.F.toString(nullifierHash),
+      "nullifierHash": param,
       "paths2_root": merklePath,
       "paths2_root_pos": path2RootPos2
   }

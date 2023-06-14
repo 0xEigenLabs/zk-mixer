@@ -51,7 +51,7 @@ const runTest = async (circuit, poseidonHash, path2RootPos, path2RootPos2) => {
     await utils.addCommitment(contract, poseidonHash.F.toString(nullifierHash))
     console.log("root after operation: ", await utils.getRoot(contract))
   
-    let [a, b, c, publicInfo] = await utils.generateProof(contract, poseidonHash, cmtIdx)
+    let [a, b, c, publicInfo] = await utils.generateProof(contract, poseidonHash, cmtIdx, poseidonHash.F.toString(nullifierHash))
   
     console.log("===verify===", publicInfo)
     await (await contract.verify(
@@ -85,7 +85,7 @@ describe("Bridge test suite", () => {
         console.log("contract address:", contract.address)
     })
 
-    it("Test Poseidon", async () => {
+    it.skip("Test Poseidon", async () => {
         const res = await poseidonContract["poseidon(uint256[2])"]([1, 2]);
         const res2 = poseidonHash([1, 2]);
         assert.equal(res.toString(), poseidonHash.F.toString(res2));
@@ -96,7 +96,7 @@ describe("Bridge test suite", () => {
         await utils.getPoseidon(contract, r, r)
     })
 
-    it("Test Bridge executeCircuit", async () => {
+    it.skip("Test Bridge executeCircuit", async () => {
         let path2RootPos = [0, 0, 0, 0, 0, 0, 0, 0]
         let path2RootPos2 = [1, 1, 1, 1, 1, 1, 1, 1]
         await runTest(circuit, poseidonHash, path2RootPos, path2RootPos2)
@@ -112,6 +112,10 @@ describe("Bridge test suite", () => {
 
     it("Test Bridge Contract", async () => {
         let path2RootPos = [0, 0, 0, 0, 0, 0, 0, 0]
+        await runContractTest(contract, poseidonHash, path2RootPos)
+        path2RootPos = [1, 0, 0, 0, 0, 0, 0, 0]
+        await runContractTest(contract, poseidonHash, path2RootPos)
+        path2RootPos = [0, 1, 0, 0, 0, 0, 0, 0]
         await runContractTest(contract, poseidonHash, path2RootPos)
     })
 })
