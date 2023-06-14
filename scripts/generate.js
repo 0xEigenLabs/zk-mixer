@@ -21,17 +21,13 @@ async function main() {
   // calculate cmt nullifierHash
   const path2_root_pos = [0, 0, 0, 0, 0, 0, 0, 0]
   const path2_root_pos2 = [1, 1, 1, 1, 1, 1, 1, 1]
-  const secret = "0";
   const LEAF_NUM = 8;
   //console.log(path2_root_pos.join(""))
   // 255 = 11111111b
   //const cmt_index = parseInt(path2_root_pos.reverse().join(""), 2)
   const cmt_index = Bits2Num(LEAF_NUM, path2_root_pos2)
   //console.log("cmt index", cmt_index)
-  const nullifierHash = poseidonHash([cmt_index, secret])
-  //console.log("nullifierHash", nullifierHash)
-
-  let cmt = poseidonHash([nullifierHash, secret])
+  const nullifierHash = poseidonHash([cmt_index, cmt_index])
 
   // generates salt to encrypt each leaf
   let merklePath = [
@@ -45,11 +41,8 @@ async function main() {
     '9586203148669237657308746417333646936338855598595657703565568663564319347700'
   ]
 
-  const amount = "100";
   // get merkle root
-  let root = poseidonHash([cmt, amount]);
-
-  //let root = MIMCMerkle.rootFromLeafAndPath(leaf, cmt_index, merklePath);
+  let root = nullifierHash;
 
   for (var i = 0; i < 8; i ++) {
     if (path2_root_pos[i] == 1) {
@@ -61,9 +54,7 @@ async function main() {
 
   const inputs = {
     "root": poseidonHash.F.toString(root),
-    "amount": amount, // unit: wei
     "nullifierHash": poseidonHash.F.toString(nullifierHash),
-    "secret": secret,
     "paths2_root": merklePath,
     "paths2_root_pos": path2_root_pos
   }

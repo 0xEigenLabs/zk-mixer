@@ -11,7 +11,7 @@ circom ${circuit_name}.circom --r1cs --wasm --sym
 
 mv ${circuit_name}.r1cs ${circuit_name}.sym  $base_dir
 cd $base_dir
-node ../../scripts/generate_mixer.js
+node ../../scripts/generate.js
 POWER=15
 
 #Prapare phase 1
